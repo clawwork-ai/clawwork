@@ -677,25 +677,78 @@ S3-compatible（AWS S3 / MinIO / Cloudflare R2）
 
 #### 3.1 产物落盘
 
-- [ ] **T3-1** Channel Plugin：实现 `sendMedia()` 处理，将 `mediaPath` 通过 WebSocket 发送给客户端
-  - ✅ Check：Agent 生成文件后，客户端收到 mediaPath 消息
-- [ ] **T3-2** 客户端文件复制：收到 mediaPath → 复制文件到 Task 产物目录 → 写入 Artifact 记录到 SQLite
-  - ✅ Check：`<workspace>/tasks/<task-dir>/artifacts/` 下出现对应文件
-- [ ] **T3-3** Git Repo 初始化 + 自动提交：首次启动时 `git init`，每次产物变更自动 commit
+- [x] **T3-1** Workspace 配置持久化：`app.getPath('userData')/clawwork-config.json`，Setup 引导页
+  - ✅ Check：首次启动显示 Setup 引导，选择目录后配置写入 JSON
+- [x] **T3-2** SQLite 数据库初始化：`better-sqlite3` + Drizzle ORM，tasks/messages/artifacts 表，DB 文件在 `<workspacePath>/.clawwork.db`（WAL 模式）
+  - ✅ Check：DB 文件自动创建，Drizzle schema 与表结构一致
+- [x] **T3-3** 产物落盘 + Git auto-commit：artifact 文件复制到 workspace task dir + SQLite insert + simple-git add/commit
   - ✅ Check：`git log` 能看到产物变更的 commit 记录
 
 #### 3.2 文件浏览器
 
-- [ ] **T3-4** 文件浏览器 Main Area 视图：搜索栏 + 类型筛选 tab + 宫格列表
+- [x] **T3-4** 文件浏览器 Main Area 视图：FileBrowser 布局，搜索栏 + 类型筛选 tab + 宫格列表，数据来自 IPC
   - ✅ Check：点击左侧 Files 入口 → Main Area 切换为文件浏览器，右侧面板隐藏
-- [ ] **T3-5** 文件卡片组件：图标 + 文件名 + 日期 + 所属 Task 名称
+- [x] **T3-5** 文件卡片组件：FileCard，图标 + 文件名 + 日期 + 所属 Task 名称
   - ✅ Check：按生成时间倒序排列，文件类型筛选正常工作
-- [ ] **T3-6** 文件 → Task 跳转：点击文件卡片跳转到对应 Task 对话详情，高亮产生该文件的消息
+- [x] **T3-6** 文件 → Task 跳转 + 文件预览：点击文件卡片跳转到对应 Task 对话详情，高亮产生该文件的消息（2s fade 动画）；FilePreview 组件支持 Markdown/代码/图片
   - ✅ Check：从文件浏览器跳转后，目标消息滚动到可视区域并有高亮动画
-- [ ] **T3-7** 文件预览：Markdown 内联预览、代码语法高亮预览、图片缩略图
-  - ✅ Check：hover 文件卡片或在 Artifacts 面板点击时出现预览
+- [x] **T3-7** IPC 层：workspace/artifact/settings IPC handlers 完整实现
+  - ✅ Check：所有 file browser 数据通过 IPC 获取，mock 数据已移除
 
 **Phase 3 验收：产物自动保存到本地 Git Repo，文件浏览器可按类型筛选和搜索**
+
+---
+
+### Phase 3.5：Design System + UI 全面重构 + Premium Depth Pass
+
+**目标：从原型级 UI 升级为产品级 UI，建立完整设计系统**
+
+#### 3.5.1 Design System 基础设施
+
+- [x] **T3.5-0** 安装依赖：framer-motion, cva, Radix UI 全家桶 (@radix-ui/react-collapsible, @radix-ui/react-dropdown-menu, @radix-ui/react-scroll-area, @radix-ui/react-tabs, @radix-ui/react-tooltip), @fontsource-variable/inter, @fontsource-variable/jetbrains-mono, clsx, tailwind-merge
+  - ✅ Check：所有依赖安装成功，无版本冲突
+- [x] **T3.5-1** 设计系统定义：`design-system.md` 规范文档 + `design-tokens.ts` TS 常量（colors, spacing, radius, typography, shadows, transitions, motion presets）+ shadcn/ui 基础组件（Button, ScrollArea, Collapsible, Tabs, DropdownMenu, Tooltip）
+  - ✅ Check：所有 token 值在 TS 和 CSS 中保持一致
+
+#### 3.5.2 基础层重构
+
+- [x] **T3.5-2** theme.css 重写：字体 CSS @import, @layer base 包裹自定义样式, 扩展 CSS Variables（dark+light 双模式完整覆盖）
+  - ✅ Check：无 unlayered 全局样式（避免覆盖 Tailwind utilities）
+
+#### 3.5.3 组件重构（shadcn/ui + Framer Motion）
+
+- [x] **T3.5-3** 全部业务组件用 shadcn/ui + motion 重写：ChatMessage (motion.div listItem), ChatInput (Button + motion), StreamingMessage (motion.div fadeIn), ToolCallCard (Radix Collapsible + AnimatePresence), FileCard (motion.button), FilePreview (ScrollArea)
+  - ✅ Check：所有组件使用 cn() 合并 class，颜色通过 CSS Variables，动画使用 motion presets
+
+#### 3.5.4 布局重构
+
+- [x] **T3.5-4** 全部布局组件重写：LeftNav (TaskItem 提取为独立组件 + DropdownMenu 右键菜单 + Tooltip), MainArea (AnimatePresence 视图切换 + 欢迎屏), RightPanel (Tabs 组件), FileBrowser (AnimatePresence 预览), Settings, Setup, App.tsx (TooltipProvider 包裹)
+  - ✅ Check：布局组件均使用 shadcn/ui 基础组件 + motion 动画
+
+#### 3.5.5 清理 + 验证
+
+- [x] **T3.5-5** 删除死代码：`useAgentMessages.ts`（已被 `useGatewayDispatcher.ts` 取代）
+- [x] **T3.5-6** 验证通过：tsc --noEmit 零错误，dev server 正常启动，UI 截图确认渲染正确
+
+#### 3.5.6 Visual Polish — Font/Size Bump
+
+- [x] **T3.5-7** 全局尺寸调整（13 个文件）：基础字体 13→14px，avatar/icon/button 尺寸放大，圆角统一，section labels 用 text-xs 区分层级，Button danger variant 硬编码 hex → CSS Variables
+
+#### 3.5.7 Visual Polish — Premium Depth Pass
+
+- [x] **T3.5-8** Premium CSS Variables：12 个新 token（`--accent-hover`, `--accent-soft`, `--accent-soft-hover`, `--bg-elevated`, `--ring-accent`, `--glow-accent`, `--shadow-elevated`, `--shadow-card`, `--border-subtle`, `--danger`, `--danger-bg`），dark + light 双模式值
+- [x] **T3.5-9** CSS utility classes：`.surface-elevated`, `.glow-accent`, `.ring-accent-focus` 在 `@layer base` 中定义
+- [x] **T3.5-10** Button `soft` variant：`--accent-soft` 背景 + accent 文字（比 `default` 全填充柔和），ChatInput 发送按钮和 LeftNav "新任务"按钮使用
+- [x] **T3.5-11** 所有 Button variants 增加 `active:scale-[0.98]` 按压反馈
+- [x] **T3.5-12** ChatInput：`--bg-elevated` + `--shadow-elevated` + `ring-accent-focus` 焦点环
+- [x] **T3.5-13** WelcomeScreen：radial glow behind logo + "AI-powered task execution" subtitle + typography hierarchy
+- [x] **T3.5-14** TaskItem：active 状态左侧 3px accent bar + `whileHover={{ x: 2 }}` 微交互
+- [x] **T3.5-15** ToolCallCard：左侧状态条（running=pulse, done=semi-transparent, error=red）+ shadow-card
+- [x] **T3.5-16** tabs.tsx 尺寸调整：h-8→h-9, px-2.5→px-3, active 使用 `--bg-elevated` + `--shadow-card`
+- [x] **T3.5-17** dropdown-menu.tsx：硬编码颜色 → CSS Variables (`--danger`, `--danger-bg`)，content 使用 `--bg-elevated` + `--shadow-elevated`
+- [x] **T3.5-18** Setup 页面：radial glow + form 卡片容器
+
+**Phase 3.5 验收：tsc --noEmit 零错误，dev server 正常启动，UI 截图确认 premium depth 效果**
 
 ---
 

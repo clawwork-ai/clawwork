@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import Markdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import { X, ExternalLink, Loader2 } from 'lucide-react';
 import type { Artifact } from '@clawwork/shared';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { motion as motionPresets } from '@/styles/design-tokens';
 
 interface FilePreviewProps {
   artifact: Artifact;
@@ -60,47 +65,49 @@ export default function FilePreview({ artifact, onClose, onNavigateToTask }: Fil
   }, [artifact.localPath]);
 
   return (
-    <div className="flex flex-col h-full">
-      <header className="flex items-center justify-between px-4 h-11 border-b border-[var(--border)] flex-shrink-0">
+    <motion.div className="flex flex-col h-full" {...motionPresets.slideIn}>
+      <header className={cn(
+        'flex items-center justify-between px-4 h-11 border-b border-[var(--border)] flex-shrink-0',
+      )}>
         <div className="flex items-center gap-2 min-w-0">
           <h3 className="text-sm font-medium text-[var(--text-primary)] truncate">
             {artifact.name}
           </h3>
-          <button
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={() => onNavigateToTask(artifact.taskId, artifact.messageId)}
-            className="flex-shrink-0 p-1 rounded text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
             title="跳转到源消息"
           >
             <ExternalLink size={14} />
-          </button>
+          </Button>
         </div>
-        <button
-          onClick={onClose}
-          className="p-1 rounded text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
-        >
+        <Button variant="ghost" size="icon-sm" onClick={onClose}>
           <X size={16} />
-        </button>
+        </Button>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-4">
-        {loading && (
-          <div className="flex items-center justify-center h-full">
-            <Loader2 size={20} className="animate-spin text-[var(--text-muted)]" />
-          </div>
-        )}
-        {error && (
-          <p className="text-sm text-red-400 text-center py-8">{error}</p>
-        )}
-        {!loading && !error && content !== null && (
-          <PreviewContent
-            content={content}
-            encoding={encoding}
-            mimeType={artifact.mimeType}
-            name={artifact.name}
-          />
-        )}
-      </div>
-    </div>
+      <ScrollArea className="flex-1">
+        <div className="p-4">
+          {loading && (
+            <div className="flex items-center justify-center h-full">
+              <Loader2 size={20} className="animate-spin text-[var(--text-muted)]" />
+            </div>
+          )}
+          {error && (
+            <p className="text-sm text-[var(--danger)] text-center py-8">{error}</p>
+          )}
+          {!loading && !error && content !== null && (
+            <PreviewContent
+              content={content}
+              encoding={encoding}
+              mimeType={artifact.mimeType}
+              name={artifact.name}
+            />
+          )}
+        </div>
+      </ScrollArea>
+    </motion.div>
   );
 }
 

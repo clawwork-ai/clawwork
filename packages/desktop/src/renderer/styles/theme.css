@@ -1,57 +1,92 @@
 @import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
 
 /* ============================================================
-   ClawWork Theme System
+   ClawWork Design System — Theme Variables
+   See design-system.md for full specification.
    ============================================================ */
 
-:root[data-theme="dark"],
-:root {
-  --bg-primary: #1C1C1C;
-  --bg-secondary: #242424;
-  --bg-tertiary: #2A2A2A;
-  --bg-hover: #333333;
-  --accent: #0FFD0D;
-  --accent-dim: rgba(15, 253, 13, 0.15);
-  --text-primary: #F3F4F4;
-  --text-secondary: #9CA3AF;
-  --text-muted: #6B7280;
-  --border: rgba(255, 255, 255, 0.08);
-  --border-accent: rgba(15, 253, 93, 0.15);
-  --scrollbar-thumb: #444444;
-  --scrollbar-track: transparent;
-}
+@layer base {
+  :root,
+  :root[data-theme="dark"] {
+    --bg-primary: #1C1C1C;
+    --bg-secondary: #242424;
+    --bg-tertiary: #2A2A2A;
+    --bg-hover: #333333;
+    --accent: #0FFD0D;
+    --accent-dim: rgba(15, 253, 13, 0.15);
+    --text-primary: #F3F4F4;
+    --text-secondary: #9CA3AF;
+    --text-muted: #6B7280;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-accent: rgba(15, 253, 93, 0.15);
+    --scrollbar-thumb: #444444;
+    --scrollbar-track: transparent;
+    --danger: #F87171;
+    --danger-bg: rgba(239, 68, 68, 0.1);
+    --warning: #FBBF24;
+    --info: #60A5FA;
+    --shadow-color: rgba(0, 0, 0, 0.4);
+    --radius: 6px;
 
-:root[data-theme="light"] {
-  --bg-primary: #FAFAFA;
-  --bg-secondary: #FFFFFF;
-  --bg-tertiary: #F3F4F6;
-  --bg-hover: #E5E7EB;
-  --accent: #0B8A0A;
-  --accent-dim: rgba(11, 138, 10, 0.1);
-  --text-primary: #111827;
-  --text-secondary: #6B7280;
-  --text-muted: #9CA3AF;
-  --border: rgba(0, 0, 0, 0.08);
-  --border-accent: rgba(11, 138, 10, 0.15);
-  --scrollbar-thumb: #D1D5DB;
-  --scrollbar-track: transparent;
-}
+    /* Premium depth tokens */
+    --accent-hover: #0de00b;
+    --accent-soft: rgba(15, 253, 13, 0.12);
+    --accent-soft-hover: rgba(15, 253, 13, 0.22);
+    --bg-elevated: #262626;
+    --ring-accent: rgba(15, 253, 13, 0.35);
+    --glow-accent: 0 0 20px rgba(15, 253, 13, 0.15);
+    --shadow-elevated: 0 4px 24px rgba(0, 0, 0, 0.35), 0 1px 4px rgba(0, 0, 0, 0.2);
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.25), 0 0 1px rgba(0, 0, 0, 0.15);
+    --border-subtle: rgba(255, 255, 255, 0.05);
+  }
 
-/* ============================================================
-   Base Styles
-   ============================================================ */
+  :root[data-theme="light"] {
+    --bg-primary: #FAFAFA;
+    --bg-secondary: #FFFFFF;
+    --bg-tertiary: #F3F4F6;
+    --bg-hover: #E5E7EB;
+    --accent: #0B8A0A;
+    --accent-dim: rgba(11, 138, 10, 0.1);
+    --text-primary: #111827;
+    --text-secondary: #6B7280;
+    --text-muted: #9CA3AF;
+    --border: rgba(0, 0, 0, 0.08);
+    --border-accent: rgba(11, 138, 10, 0.15);
+    --scrollbar-thumb: #D1D5DB;
+    --scrollbar-track: transparent;
+    --danger: #EF4444;
+    --danger-bg: rgba(239, 68, 68, 0.08);
+    --warning: #F59E0B;
+    --info: #3B82F6;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --radius: 6px;
 
-/* Tailwind v4 Preflight already sets *, ::before, ::after { margin:0; padding:0; box-sizing:border-box }
-   via @layer base. Do NOT duplicate here — unlayered styles override @layer utilities. */
+    /* Premium depth tokens */
+    --accent-hover: #098609;
+    --accent-soft: rgba(11, 138, 10, 0.08);
+    --accent-soft-hover: rgba(11, 138, 10, 0.16);
+    --bg-elevated: #FFFFFF;
+    --ring-accent: rgba(11, 138, 10, 0.3);
+    --glow-accent: 0 0 20px rgba(11, 138, 10, 0.1);
+    --shadow-elevated: 0 4px 24px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.05);
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 0 1px rgba(0, 0, 0, 0.04);
+    --border-subtle: rgba(0, 0, 0, 0.04);
+  }
 
-html, body, #root {
-  height: 100%;
-  overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC',
-    sans-serif;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  -webkit-font-smoothing: antialiased;
+  html, body, #root {
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Inter Variable', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    letter-spacing: -0.011em;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
 
 /* macOS title bar drag region */
@@ -63,99 +98,106 @@ html, body, #root {
   -webkit-app-region: no-drag;
 }
 
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--scrollbar-track);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
-}
+/* Scrollbar — native fallback for areas not using Radix ScrollArea */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 /* ============================================================
-   Markdown prose styles (assistant messages)
+   Markdown prose (assistant messages)
    ============================================================ */
 
-.prose-chat {
-  line-height: 1.6;
-}
+@layer base {
+  .prose-chat {
+    line-height: 1.7;
+  }
 
-.prose-chat p {
-  margin: 0.4em 0;
-}
+  .prose-chat p {
+    margin: 0.4em 0;
+  }
 
-.prose-chat p:first-child {
-  margin-top: 0;
-}
+  .prose-chat p:first-child { margin-top: 0; }
+  .prose-chat p:last-child { margin-bottom: 0; }
 
-.prose-chat p:last-child {
-  margin-bottom: 0;
-}
+  .prose-chat code {
+    font-family: 'JetBrains Mono Variable', 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.85em;
+    background: var(--bg-tertiary);
+    padding: 0.15em 0.35em;
+    border-radius: 4px;
+  }
 
-.prose-chat code {
-  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
-  font-size: 0.85em;
-  background: var(--bg-tertiary);
-  padding: 0.15em 0.35em;
-  border-radius: 4px;
-}
+  .prose-chat pre {
+    margin: 0.6em 0;
+    padding: 0.75em 1em;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    overflow-x: auto;
+  }
 
-.prose-chat pre {
-  margin: 0.6em 0;
-  padding: 0.75em 1em;
-  background: var(--bg-primary);
-  border-radius: 8px;
-  overflow-x: auto;
-}
+  .prose-chat pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.82em;
+  }
 
-.prose-chat pre code {
-  background: none;
-  padding: 0;
-  font-size: 0.82em;
-}
+  .prose-chat ul,
+  .prose-chat ol {
+    margin: 0.4em 0;
+    padding-left: 1.5em;
+  }
 
-.prose-chat ul, .prose-chat ol {
-  margin: 0.4em 0;
-  padding-left: 1.5em;
-}
+  .prose-chat li { margin: 0.15em 0; }
 
-.prose-chat li {
-  margin: 0.15em 0;
-}
+  .prose-chat a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
 
-.prose-chat a {
-  color: var(--accent);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
+  .prose-chat blockquote {
+    border-left: 3px solid var(--border);
+    padding-left: 0.75em;
+    margin: 0.4em 0;
+    color: var(--text-secondary);
+  }
 
-.prose-chat blockquote {
-  border-left: 3px solid var(--border);
-  padding-left: 0.75em;
-  margin: 0.4em 0;
-  color: var(--text-secondary);
-}
+  .prose-chat h1,
+  .prose-chat h2,
+  .prose-chat h3 {
+    margin: 0.6em 0 0.3em;
+    font-weight: 600;
+  }
 
-.prose-chat h1, .prose-chat h2, .prose-chat h3 {
-  margin: 0.6em 0 0.3em;
-  font-weight: 600;
+  .prose-chat h1 { font-size: 1.25em; }
+  .prose-chat h2 { font-size: 1.125em; }
+  .prose-chat h3 { font-size: 1.0625em; }
 }
-
-.prose-chat h1 { font-size: 1.15em; }
-.prose-chat h2 { font-size: 1.05em; }
-.prose-chat h3 { font-size: 1em; }
 
 /* ============================================================
-   Highlight animation (file navigation)
+   Premium depth utilities
+   ============================================================ */
+
+@layer base {
+  .surface-elevated {
+    background-color: var(--bg-elevated);
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .glow-accent {
+    box-shadow: var(--glow-accent);
+  }
+
+  .ring-accent-focus:focus-within {
+    box-shadow: var(--glow-accent);
+    border-color: var(--ring-accent);
+  }
+}
+
+/* ============================================================
+   Animations
    ============================================================ */
 
 @keyframes msg-highlight {

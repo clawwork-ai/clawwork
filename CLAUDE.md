@@ -69,24 +69,33 @@ Channel Plugin 运行在 OpenClaw 进程里（不是 Electron 里）。它告诉
 │               ├── index.html
 │               ├── main.tsx         # React 入口
 │               ├── App.tsx          # 三栏布局 (260px | flex | 320px)
-│               ├── styles/theme.css # dark/light CSS Variables, accent #0FFD0D
 │               ├── stores/
 │               │   ├── taskStore.ts     # Task CRUD, activeTaskId
 │               │   ├── messageStore.ts  # messagesByTask, streamingByTask
 │               │   └── uiStore.ts       # rightPanelOpen, unreadTaskIds
+│               ├── styles/
+│               │   ├── theme.css            # Tailwind v4 + CSS Variables + Inter/JetBrains Mono
+│               │   └── design-tokens.ts     # TS 设计令牌 (colors, spacing, motion presets)
+│               ├── lib/
+│               │   └── utils.ts             # cn(), formatRelativeTime(), formatFileSize()
 │               ├── components/
-│               │   ├── ChatMessage.tsx      # Markdown 渲染 + rehype-highlight
-│               │   ├── ChatInput.tsx        # Textarea, Enter/Shift+Enter, auto-resize
-│               │   ├── StreamingMessage.tsx  # 流式响应 + cursor 动画
-│               │   ├── ToolCallCard.tsx     # 可折叠工具调用卡片
-│               │   └── ContextMenu.tsx      # 右键菜单 + useTaskContextMenu hook
+│               │   ├── ui/                  # shadcn/ui 基础组件 (Button, ScrollArea, Tabs, etc.)
+│               │   ├── ChatMessage.tsx      # Markdown 渲染 + motion.div listItem
+│               │   ├── ChatInput.tsx        # Button + motion, Enter/Shift+Enter
+│               │   ├── StreamingMessage.tsx  # motion.div fadeIn + cursor 动画
+│               │   ├── ToolCallCard.tsx     # Radix Collapsible + AnimatePresence
+│               │   ├── ContextMenu.tsx      # useTaskContextMenu hook (组件已移除)
+│               │   ├── FileCard.tsx         # motion.button 文件卡片
+│               │   └── FilePreview.tsx      # 文件预览面板
 │               ├── hooks/
-│               │   ├── useGatewayDispatcher.ts  # Gateway chat 事件 → stores
-│               │   └── useAgentMessages.ts      # Phase 1 遗留 hook（未使用）
+│               │   └── useGatewayDispatcher.ts  # Gateway chat 事件 → stores
 │               └── layouts/
-│                   ├── LeftNav/     # 动态任务列表 (分组+排序), 新任务按钮, 右键菜单
-│                   ├── MainArea/    # 对话消息流, 欢迎屏, 滚动管理
-│                   └── RightPanel/  # Progress 提取, Artifacts 列表, Git 占位
+│                   ├── LeftNav/     # TaskItem 提取, DropdownMenu 右键菜单, Tooltip
+│                   ├── MainArea/    # AnimatePresence 视图切换, 欢迎屏
+│                   ├── RightPanel/  # Tabs (Progress/Artifacts/Git), ScrollArea
+│                   ├── FileBrowser/ # 文件浏览器 + AnimatePresence 预览
+│                   ├── Settings/    # 设置页面
+│                   └── Setup/       # 初始化引导页
 ```
 
 ### 包间依赖
@@ -106,9 +115,12 @@ channel-plugin  @clawwork/desktop
 |---|---|
 | 框架 | Electron 34 + electron-vite 3 |
 | 前端 | React 19, TypeScript 5.x, Tailwind CSS v4 |
+| UI 组件 | shadcn/ui (Radix UI + cva + tailwind-merge) |
+| 动画 | Framer Motion |
+| 字体 | Inter Variable (UI) + JetBrains Mono (代码) |
 | 状态管理 | Zustand 5 |
-| 数据库 | better-sqlite3 + Drizzle ORM (计划) |
-| Git 操作 | simple-git (计划) |
+| 数据库 | better-sqlite3 + Drizzle ORM |
+| Git 操作 | simple-git |
 | 图标 | lucide-react |
 | 构建 | Vite 6 (via electron-vite) |
 | 打包 | electron-builder (macOS Universal Binary) |
@@ -123,10 +135,11 @@ pnpm install
 # 开发 Desktop App（Electron 热更新）
 pnpm --filter @clawwork/desktop dev
 
-# 类型检查
-pnpm exec tsc --noEmit -p packages/shared/tsconfig.json
-pnpm exec tsc --noEmit -p packages/desktop/tsconfig.json
-pnpm exec tsc --noEmit -p packages/channel-plugin/tsconfig.json
+# 类型检查（注意：tsc 只在 desktop/node_modules 下，pnpm exec tsc 不可用）
+# 必须先 build shared（composite: true），再 check desktop
+packages/desktop/node_modules/.bin/tsc -b packages/shared/tsconfig.json
+packages/desktop/node_modules/.bin/tsc --noEmit -p packages/desktop/tsconfig.json
+packages/desktop/node_modules/.bin/tsc --noEmit -p packages/channel-plugin/tsconfig.json
 
 # 将 Channel Plugin symlink 安装到 OpenClaw（开发模式）
 openclaw plugins install -l ./packages/channel-plugin
@@ -221,9 +234,47 @@ CSS Variables 驱动，dark 为默认。切换方式：`<html data-theme="dark|l
 - **T1-6** Channel Plugin 完善：Gateway 单通道已能完成完整对话，Plugin WS 通道延后
 - **T2-10** 多任务并行验证：功能已就绪，但未做系统性测试
 
+### Phase 3 — 已完成 ✅ (commit `TBD`)
+
+- **T3-1** Workspace 配置持久化：`app.getPath('userData')/clawwork-config.json`，Setup 引导页
+- **T3-2** SQLite 数据库初始化：`better-sqlite3`，tasks/messages/artifacts 表，DB 文件在 `<workspacePath>/.clawwork.db`
+- **T3-3** 产物落盘：artifact 文件复制到 workspace，DB 记录，Git auto-commit (simple-git)
+- **T3-4** 文件浏览器 UI：FileBrowser 布局，FileCard 组件，搜索+筛选+类型分组
+- **T3-5** 文件预览面板：FilePreview 组件，代码/文本/图片预览
+- **T3-6** IPC 层：workspace/artifact/settings IPC handlers
+
+### Phase 3.5 — 已完成 ✅ (待提交)
+
+Design System + UI 全面重构：shadcn/ui + Framer Motion + Inter/JetBrains Mono 字体
+
+- **T3.5-0** 安装依赖：framer-motion, cva, Radix UI 全家桶, @fontsource-variable/*
+- **T3.5-1** 设计系统定义：`design-system.md` 规范 + `design-tokens.ts` TS 常量 + shadcn/ui 基础组件
+- **T3.5-2** 基础层重构：theme.css 重写（字体导入, @layer base, 扩展 CSS 变量）
+- **T3.5-3** 组件重构：ChatMessage, ChatInput, StreamingMessage, ToolCallCard, FileCard, FilePreview 全部用 shadcn/ui + motion 重写
+- **T3.5-4** 布局重构：LeftNav (TaskItem 提取 + DropdownMenu), MainArea (AnimatePresence), RightPanel (Tabs), FileBrowser, Settings, Setup, App.tsx (TooltipProvider)
+- **T3.5-5** 清理：删除 useAgentMessages.ts 死代码
+- **T3.5-6** 验证通过：tsc --noEmit 零错误，dev server 正常启动，UI 截图确认渲染正确
+
+### Phase 3.5 Visual Polish — 已完成 ✅ (待提交)
+
+**Font/Size Bump (13 files):**
+- **T3.5-7** 基础字体 13→14px, avatar/icon/button 尺寸放大, 圆角统一, section labels text-xs, Button danger variant hex→CSS vars
+
+**Premium Depth Pass (10 items, all verified):**
+- **T3.5-8** theme.css 新增 12 个 premium CSS Variables（dark+light）: `--accent-hover`, `--accent-soft`, `--accent-soft-hover`, `--bg-elevated`, `--ring-accent`, `--glow-accent`, `--shadow-elevated`, `--shadow-card`, `--border-subtle`, `--danger`, `--danger-bg`
+- **T3.5-9** 3 个 CSS utility classes: `.surface-elevated`, `.glow-accent`, `.ring-accent-focus`
+- **T3.5-10** button.tsx: 新增 `soft` variant + 所有 variants `active:scale-[0.98]` + focus ring `--ring-accent`
+- **T3.5-11** ChatInput: `--bg-elevated` + `--shadow-elevated` + `ring-accent-focus`, send button → `soft` variant
+- **T3.5-12** MainArea WelcomeScreen: radial glow + subtitle + typography hierarchy
+- **T3.5-13** LeftNav "新任务" button: `default` → `soft` variant
+- **T3.5-14** TaskItem: active 左侧 3px accent bar + `whileHover={{ x: 2 }}` 微交互
+- **T3.5-15** ToolCallCard: 左侧状态条 (running=pulse, done=accent, error=red) + shadow-card
+- **T3.5-16** tabs.tsx: 尺寸放大, active 使用 `--bg-elevated` + `--shadow-card`
+- **T3.5-17** dropdown-menu.tsx: 硬编码颜色 → CSS Variables, content 使用 `--bg-elevated` + `--shadow-elevated`
+- **T3.5-18** Setup 页面: radial glow + elevated card form container
+
 ### 后续 Phase 概览
 
-- **Phase 3** — 产物管理 (T3-1 ~ T3-7): sendMedia 文件落盘、Git auto-commit、文件浏览器 (搜索+筛选+宫格列表+跳转回 Task)
 - **Phase 4** — 打磨+打包 (T4-1 ~ T4-7): 主题切换、全局搜索 (FTS5)、Settings、错误处理、electron-builder dmg
 
 ## 任务依赖图
@@ -309,4 +360,5 @@ Tailwind v4 将所有 utility classes 输出到 `@layer utilities` 中。根据 
 
 ## 设计文档
 
-完整设计文档见仓库外的 `openclaw-desktop-design.md`（v0.2），包含数据模型、UI 原型、ADR、28 个开发任务的完整描述和验收标准。
+- 完整设计文档见仓库外的 `openclaw-desktop-design.md`（v0.2），包含数据模型、UI 原型、ADR、28 个开发任务的完整描述和验收标准。
+- 设计系统规范见仓库内 `design-system.md`，包含色彩、字体、间距、圆角、阴影、动效、组件状态的完整定义。
