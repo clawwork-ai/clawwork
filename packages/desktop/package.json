@@ -2,8 +2,14 @@
   "name": "@clawwork/desktop",
   "version": "0.1.0",
   "private": true,
+  "description": "OpenClaw desktop client with structured task management",
   "type": "module",
   "main": "./out/main/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/clawwork-ai/clawwork.git"
+  },
+  "author": "clawwork-ai",
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
