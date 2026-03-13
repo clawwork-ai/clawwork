@@ -1,18 +1,18 @@
 # Development
 
-## 开发
+## Getting Started
 
 ```bash
 pnpm install
 pnpm --filter @clawwork/desktop dev
 ```
 
-## 打包 (unsigned dmg)
+## Packaging (unsigned dmg)
 
 ```bash
 pnpm --filter @clawwork/desktop run build:dmg
 ```
 
-产物在 `packages/desktop/dist/ClawWork-<version>-arm64.dmg`。
+Output at `packages/desktop/dist/ClawWork-<version>-arm64.dmg`.
 
-未签名，首次打开需右键 → 打开。
+Unsigned — on first launch, right-click → Open.

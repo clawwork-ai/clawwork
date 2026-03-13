@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { mergeGatewayStreamText } from '../dist/constants.js';
 
 test('mergeGatewayStreamText upgrades a partial snapshot to the longer snapshot', () => {
-  assert.equal(mergeGatewayStreamText('[[main] 嗯，在线。', '[[main] 嗯，在线。你这是测试我死没死。'), '[[main] 嗯，在线。你这是测试我死没死。');
+  assert.equal(mergeGatewayStreamText('[[main] Yes, online.', '[[main] Yes, online. Are you testing whether I am alive?'), '[[main] Yes, online. Are you testing whether I am alive?');
 });
 
 test('mergeGatewayStreamText ignores identical snapshots', () => {

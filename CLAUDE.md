@@ -1,32 +1,32 @@
-# CLAUDE.md — ClawWork 项目指南
+# CLAUDE.md — ClawWork Project Guide
 
-## 项目概述
+## Project Overview
 
-ClawWork 是一个 OpenClaw 桌面客户端，体验对标 Claude Cowork：三栏布局、多任务并行、结构化进度追踪。在此基础上新增文件管理能力——所有 AI 产物自动落盘到本地 Git Repo，可搜索、可追溯。
+ClawWork is an OpenClaw desktop client inspired by Claude Cowork: three-panel layout, parallel multi-task execution, and structured progress tracking. It adds file management capabilities on top — all AI artifacts are automatically persisted to a local Git repo, searchable and traceable.
 
-**不是** OpenClaw 管理后台，**不是**通用 IM 客户端，**不是**多人协作工具。
+**Not** an OpenClaw admin console. **Not** a general-purpose IM client. **Not** a collaboration tool.
 
-## 架构
+## Architecture
 
 ```
 ┌─────────────────────┐       ┌──────────────────────────┐
 │ OpenClaw Server      │  WS   │ ClawWork Desktop App     │
-│ (Node.js 进程)       │◄────►│ (Electron 34 进程)        │
+│ (Node.js process)    │◄────►│ (Electron 34 process)     │
 │                     │       │                          │
 │ ┌─────────────────┐ │       │  React 19 UI             │
-│ │ Gateway :18789  │ │       │  SQLite (元数据索引)       │
-│ │ Agent Engine    │ │       │  Git Repo (产物版本化)     │
+│ │ Gateway :18789  │ │       │  SQLite (metadata index)  │
+│ │ Agent Engine    │ │       │  Git Repo (artifact VCS)  │
 │ └─────────────────┘ │       │                          │
 └─────────────────────┘       └──────────────────────────┘
 ```
 
-**Gateway-Only 架构（单一 WS 连接）：**
+**Gateway-Only Architecture (single WS connection):**
 
-Desktop → Gateway (:18789)：`chat.send` 发送用户消息（`deliver: false` 不走外部渠道），通过 `event:"chat"` 接收 Agent 流式回复，通过 `event:"agent"` + `caps:["tool-events"]` 接收工具调用事件。
+Desktop → Gateway (:18789): `chat.send` sends user messages (`deliver: false` — no external channel delivery), receives Agent streaming replies via `event:"chat"`, and receives tool-call events via `event:"agent"` + `caps:["tool-events"]`.
 
-> 历史说明：早期版本使用 Desktop↔Plugin 双通道架构，已在 Gateway-Only 重构（G1-G9）中完全移除。`packages/channel-plugin` 代码仍在仓库中但已从 workspace 排除。
+> Historical note: An earlier version used a Desktop↔Plugin dual-channel architecture, which was fully removed during the Gateway-Only refactor (G1-G9). The `packages/channel-plugin` code remains in the repo but is excluded from the workspace.
 
-## Monorepo 结构
+## Monorepo Structure
 
 ```
 ./
@@ -34,22 +34,22 @@ Desktop → Gateway (:18789)：`chat.send` 发送用户消息（`deliver: false`
 ├── pnpm-workspace.yaml
 ├── tsconfig.base.json        # ES2022, strict, bundler resolution
 ├── packages/
-│   ├── shared/               # @clawwork/shared — 零依赖类型桥梁
+│   ├── shared/               # @clawwork/shared — zero-dependency type bridge
 │   │   └── src/
 │   │       ├── types.ts      # Task, Message, Artifact, ToolCall, ProgressStep
-│   │       ├── protocol.ts   # WsMessage 联合类型 + type guards
-│   │       ├── gateway-protocol.ts  # GatewayFrame 类型, GatewayConnectParams
-│   │       ├── constants.ts  # 端口号, buildSessionKey(), parseTaskIdFromSessionKey()
+│   │       ├── protocol.ts   # WsMessage union type + type guards
+│   │       ├── gateway-protocol.ts  # GatewayFrame types, GatewayConnectParams
+│   │       ├── constants.ts  # port numbers, buildSessionKey(), parseTaskIdFromSessionKey()
 │   │       └── index.ts      # barrel export
-│   ├── channel-plugin/       # (已从 workspace 排除，代码保留但不参与构建)
-│   └── desktop/              # @clawwork/desktop — Electron 应用
+│   ├── channel-plugin/       # (excluded from workspace; code retained but not built)
+│   └── desktop/              # @clawwork/desktop — Electron app
 │       ├── electron.vite.config.ts  # React + Tailwind v4 vite plugin
 │       └── src/
 │           ├── main/
-│           │   ├── index.ts         # Electron 主进程, hiddenInset titleBar
+│           │   ├── index.ts         # Electron main process, hiddenInset titleBar
 │           │   ├── ws/
 │           │   │   ├── gateway-client.ts  # GatewayClient: challenge-response auth, heartbeat, reconnect
-│           │   │   ├── window-utils.ts    # BrowserWindow 辅助工具
+│           │   │   ├── window-utils.ts    # BrowserWindow helpers
 │           │   │   └── index.ts           # initWebSockets, getters, destroy
 │           │   └── ipc/
 │           │       └── ws-handlers.ts     # IPC handlers: send-message, chat-history, list-sessions, gateway-status
@@ -58,296 +58,284 @@ Desktop → Gateway (:18789)：`chat.send` 发送用户消息（`deliver: false`
 │           │   └── clawwork.d.ts    # ClawWorkAPI interface
 │           └── renderer/
 │               ├── index.html
-│               ├── main.tsx         # React 入口
-│               ├── App.tsx          # 三栏布局 (260px | flex | 320px)
+│               ├── main.tsx         # React entry
+│               ├── App.tsx          # Three-panel layout (260px | flex | 320px)
 │               ├── stores/
 │               │   ├── taskStore.ts     # Task CRUD, activeTaskId
 │               │   ├── messageStore.ts  # messagesByTask, streamingByTask
 │               │   └── uiStore.ts       # rightPanelOpen, unreadTaskIds
 │               ├── styles/
 │               │   ├── theme.css            # Tailwind v4 + CSS Variables + Inter/JetBrains Mono
-│               │   └── design-tokens.ts     # TS 设计令牌 (colors, spacing, motion presets)
+│               │   └── design-tokens.ts     # TS design tokens (colors, spacing, motion presets)
 │               ├── lib/
 │               │   ├── utils.ts             # cn(), formatRelativeTime(), formatFileSize()
-│               │   └── session-sync.ts      # Session 状态同步逻辑
+│               │   └── session-sync.ts      # Session state sync logic
 │               ├── components/
-│               │   ├── ui/                  # shadcn/ui 基础组件 (Button, ScrollArea, Tabs, etc.)
-│               │   ├── ChatMessage.tsx      # Markdown 渲染 + motion.div listItem
+│               │   ├── ui/                  # shadcn/ui base components (Button, ScrollArea, Tabs, etc.)
+│               │   ├── ChatMessage.tsx      # Markdown rendering + motion.div listItem
 │               │   ├── ChatInput.tsx        # Button + motion, Enter/Shift+Enter
-│               │   ├── StreamingMessage.tsx  # motion.div fadeIn + cursor 动画
+│               │   ├── StreamingMessage.tsx  # motion.div fadeIn + cursor animation
 │               │   ├── ToolCallCard.tsx     # Radix Collapsible + AnimatePresence
-│               │   ├── ContextMenu.tsx      # useTaskContextMenu hook (组件已移除)
-│               │   ├── FileCard.tsx         # motion.button 文件卡片
-│               │   └── FilePreview.tsx      # 文件预览面板
+│               │   ├── ContextMenu.tsx      # useTaskContextMenu hook (component removed)
+│               │   ├── FileCard.tsx         # motion.button file card
+│               │   └── FilePreview.tsx      # File preview panel
 │               ├── hooks/
-│               │   ├── useGatewayDispatcher.ts  # Gateway chat 事件 → stores
-│               │   └── useTheme.ts              # 主题切换 hook
+│               │   ├── useGatewayDispatcher.ts  # Gateway chat events → stores
+│               │   └── useTheme.ts              # Theme toggle hook
 │               └── layouts/
-│                   ├── LeftNav/     # TaskItem 提取, DropdownMenu 右键菜单, Tooltip
-│                   ├── MainArea/    # AnimatePresence 视图切换, 欢迎屏
+│                   ├── LeftNav/     # TaskItem extraction, DropdownMenu context menu, Tooltip
+│                   ├── MainArea/    # AnimatePresence view switching, welcome screen
 │                   ├── RightPanel/  # Tabs (Progress/Artifacts/Git), ScrollArea
-│                   ├── FileBrowser/ # 文件浏览器 + AnimatePresence 预览
-│                   ├── Settings/    # 设置页面
-│                   └── Setup/       # 初始化引导页
+│                   ├── FileBrowser/ # File browser + AnimatePresence preview
+│                   ├── Settings/    # Settings page
+│                   └── Setup/       # Initial setup wizard
 ```
 
-### 包间依赖
+### Inter-package Dependencies
 
 ```
 @clawwork/shared ← @clawwork/desktop
 ```
 
-`@clawwork/shared` 的 tsconfig 启用了 `composite: true`，desktop 通过 `references` 引用它。
+`@clawwork/shared` has `composite: true` in its tsconfig; desktop references it via `references`.
 
-## 技术栈
+## Tech Stack
 
-| 层 | 技术 |
+| Layer | Technology |
 |---|---|
-| 框架 | Electron 34 + electron-vite 3 |
-| 前端 | React 19, TypeScript 5.x, Tailwind CSS v4 |
-| UI 组件 | shadcn/ui (Radix UI + cva + tailwind-merge) |
-| 动画 | Framer Motion |
-| 字体 | Inter Variable (UI) + JetBrains Mono (代码) |
-| 状态管理 | Zustand 5 |
-| 数据库 | better-sqlite3 + Drizzle ORM |
-| Git 操作 | simple-git |
-| 图标 | lucide-react |
-| 构建 | Vite 6 (via electron-vite) |
-| 打包 | electron-builder (macOS Universal Binary) |
-| 包管理 | pnpm 10 workspace |
+| Framework | Electron 34 + electron-vite 3 |
+| Frontend | React 19, TypeScript 5.x, Tailwind CSS v4 |
+| UI Components | shadcn/ui (Radix UI + cva + tailwind-merge) |
+| Animation | Framer Motion |
+| Fonts | Inter Variable (UI) + JetBrains Mono (code) |
+| State Management | Zustand 5 |
+| Database | better-sqlite3 + Drizzle ORM |
+| Git Operations | simple-git |
+| Icons | lucide-react |
+| Build | Vite 6 (via electron-vite) |
+| Packaging | electron-builder (macOS Universal Binary) |
+| Package Manager | pnpm 10 workspace |
 
-## 开发命令
+## Development Commands
 
 ```bash
-# 安装所有依赖
+# Install all dependencies
 pnpm install
 
-# 开发 Desktop App（Electron 热更新）
+# Dev Desktop App (Electron hot-reload)
 pnpm --filter @clawwork/desktop dev
 
-# 类型检查（注意：tsc 只在 desktop/node_modules 下，pnpm exec tsc 不可用）
-# 必须先 build shared（composite: true），再 check desktop
+# Type-check (note: tsc lives under desktop/node_modules; pnpm exec tsc won't work)
+# Must build shared first (composite: true), then check desktop
 packages/desktop/node_modules/.bin/tsc -b packages/shared/tsconfig.json
 packages/desktop/node_modules/.bin/tsc --noEmit -p packages/desktop/tsconfig.json
 
-# 打包
+# Package
 pnpm --filter @clawwork/desktop build
 ```
 
-## 关键协议
+## Key Protocols
 
-### Session Key 格式
+### Session Key Format
 
 ```
 agent:main:clawwork:task:<taskId>
 ```
 
-每个 Task 对应一个独立的 OpenClaw session。session 间并行执行，session 内串行。Gateway 广播所有 session 事件（不过滤），客户端按 sessionKey 路由到对应 Task。
+Each Task maps to an independent OpenClaw session. Sessions execute in parallel; messages within a session are serial. Gateway broadcasts all session events (no filtering); the client routes by sessionKey to the corresponding Task.
 
-### Gateway WebSocket 协议
+### Gateway WebSocket Protocol
 
-Desktop 通过单一 WS 连接与 Gateway (:18789) 通信：
+Desktop communicates with Gateway (:18789) via a single WS connection:
 
-**出站（Desktop → Gateway）：**
+**Outbound (Desktop → Gateway):**
 
-| RPC 方法 | 用途 |
+| RPC Method | Purpose |
 |---|---|
-| `chat.send` | 发送用户消息 (`sessionKey` + `message` + `idempotencyKey`, `deliver: false`) |
-| `chat.history` | 拉取 session 历史消息 |
-| `sessions.list` | 列出所有 session |
+| `chat.send` | Send user message (`sessionKey` + `message` + `idempotencyKey`, `deliver: false`) |
+| `chat.history` | Fetch session message history |
+| `sessions.list` | List all sessions |
 
-**入站（Gateway → Desktop 事件）：**
+**Inbound (Gateway → Desktop events):**
 
-| event | 用途 |
+| Event | Purpose |
 |---|---|
-| `chat` | Agent 文本回复 (`payload.message.content[]`) |
-| `agent` | 工具调用事件 (需 `caps:["tool-events"]`) |
+| `chat` | Agent text reply (`payload.message.content[]`) |
+| `agent` | Tool-call events (requires `caps:["tool-events"]`) |
 
-### 文件传输
+### File Transfer
 
-MVP 只做同机部署：artifact 文件通过本地路径直接复制到 workspace 产物目录。
+MVP assumes co-located deployment only: artifact files are copied directly to the workspace artifact directory via local paths.
 
-注意 `mediaLocalRoots` 安全校验（v2026.3.2+）。
+Note the `mediaLocalRoots` security check (v2026.3.2+).
 
-## 主题系统
+## Theme System
 
-CSS Variables 驱动，dark 为默认。切换方式：`<html data-theme="dark|light">`。
+Driven by CSS Variables; dark is the default. Toggle via `<html data-theme="dark|light">`.
 
-核心色值：accent green `#0FFD0D`（dark）/ `#0B8A0A`（light），背景 `#1C1C1C` / `#FAFAFA`。
+Core accent: green `#0FFD0D` (dark) / `#0B8A0A` (light); background `#1C1C1C` / `#FAFAFA`.
 
-所有颜色通过 `var(--xxx)` 引用，不硬编码。
+All colors are referenced via `var(--xxx)` — no hardcoded hex values.
 
-## 当前进度
+## Current Progress
 
-### Phase 1 — 已完成 ✅ (commits `375154c`, `c882b4e`)
+### Phase 1 — Complete ✅ (commits `375154c`, `c882b4e`)
 
-- **T1-0** Monorepo 骨架 (pnpm workspace, tsconfig, .gitignore, git init)
-- **T1-1** Desktop 包 (Electron main, preload, renderer 入口, theme CSS)
-- **T1-2** ~~Channel Plugin~~ (已在 Gateway-Only 重构中移除，代码保留但不参与构建)
-- **T1-3** Shared 类型 (types.ts, protocol.ts, gateway-protocol.ts, constants.ts) — Drizzle ORM schema 待做
-- **T1-4** 三栏布局 (App.tsx: 260px LeftNav | flex MainArea | 320px RightPanel, 右侧可折叠)
-- **T1-5** LeftNav 静态结构 (新任务按钮, 搜索框, 文件管理入口, 示例任务列表, 设置)
-- **T1-7** Electron 主进程 WS 客户端：Gateway challenge-response 认证、心跳、指数退避重连
-- **T1-8** 消息发送：Electron → Gateway (chat.send)，含 idempotencyKey
-- **T1-9** 消息接收：Gateway 事件通过 IPC 转发到 renderer，useAgentMessages hook 按 sessionKey 路由
+- **T1-0** Monorepo scaffold (pnpm workspace, tsconfig, .gitignore, git init)
+- **T1-1** Desktop package (Electron main, preload, renderer entry, theme CSS)
+- **T1-2** ~~Channel Plugin~~ (removed in the Gateway-Only refactor; code retained but not built)
+- **T1-3** Shared types (types.ts, protocol.ts, gateway-protocol.ts, constants.ts) — Drizzle ORM schema pending
+- **T1-4** Three-panel layout (App.tsx: 260px LeftNav | flex MainArea | 320px RightPanel, right panel collapsible)
+- **T1-5** LeftNav static structure (New Task button, search box, file manager entry, sample task list, settings)
+- **T1-7** Electron main-process WS client: Gateway challenge-response auth, heartbeat, exponential-backoff reconnect
+- **T1-8** Message sending: Electron → Gateway (chat.send) with idempotencyKey
+- **T1-9** Message receiving: Gateway events forwarded to renderer via IPC; useAgentMessages hook routes by sessionKey
 
-**Phase 1 验收标准已达成：在 Electron DevTools 中通过 `window.clawwork.sendMessage()` 与 Agent 完成一轮对话，事件正确回传。**
+**Phase 1 acceptance met: completed a round-trip conversation with Agent via `window.clawwork.sendMessage()` in Electron DevTools; events returned correctly.**
 
-### Phase 2 — 已完成 ✅ (commit `bc220ad`)
+### Phase 2 — Complete ✅ (commit `bc220ad`)
 
-- **T2-0** 安装 zustand, react-markdown, rehype-highlight
-- **T2-1** New Task 流程：taskStore.createTask()，创建任务并自动设为 active
-- **T2-2** 任务列表渲染：动态读取 taskStore，按状态分组 (Active → Completed → Archived)，按创建时间倒序
-- **T2-3** 右键菜单：ContextMenu 组件 + useTaskContextMenu hook，状态流转 active→completed→archived
-- **T2-4** ChatMessage 组件：Markdown 渲染 (react-markdown + rehype-highlight)，用户/助手/系统角色区分
-- **T2-5** ChatInput 组件：Shift+Enter 换行，Enter 发送，textarea 自动伸缩高度
-- **T2-6** StreamingMessage 组件：流式响应 delta 累加 + 光标闪烁动画
-- **T2-7** ToolCallCard 组件：可折叠工具调用卡片，显示 arguments/result
-- **T2-8** Progress 面板：从 AI 消息中提取 `- [x]`/`- [ ]` 模式，显示进度步骤
-- **T2-9** Artifacts 面板：从消息的 artifacts 字段列出文件产物
-- **Bug fix** Zustand selector 无限循环：移除 store 中的 getter 方法，改为直接 state 访问 + EMPTY_MESSAGES 哨兵值
-- **Bug fix** Gateway chat 事件解析：content 位于 `payload.message.content[]`，不是 `payload.content[]`
-- **Preload 重构** buildApi() 工厂函数，修复类型错误
+- **T2-0** Install zustand, react-markdown, rehype-highlight
+- **T2-1** New Task flow: taskStore.createTask() — creates a task and automatically sets it as active
+- **T2-2** Task list rendering: reads taskStore dynamically, grouped by status (Active → Completed → Archived), reverse-chronological within groups
+- **T2-3** Context menu: ContextMenu component + useTaskContextMenu hook, state transitions active→completed→archived
+- **T2-4** ChatMessage component: Markdown rendering (react-markdown + rehype-highlight), role differentiation (user/assistant/system)
+- **T2-5** ChatInput component: Shift+Enter for newline, Enter to send, auto-expanding textarea height
+- **T2-6** StreamingMessage component: streaming response delta accumulation + blinking cursor animation
+- **T2-7** ToolCallCard component: collapsible tool-call card showing arguments/result
+- **T2-8** Progress panel: extracts `- [x]`/`- [ ]` patterns from AI messages, displays progress steps
+- **T2-9** Artifacts panel: lists file artifacts from message artifacts field
+- **Bug fix** Zustand selector infinite loop: removed getter methods from store, switched to direct state access + EMPTY_MESSAGES sentinel value
+- **Bug fix** Gateway chat event parsing: content is at `payload.message.content[]`, not `payload.content[]`
+- **Preload refactor** buildApi() factory function, fixed type errors
 
-### 延后
+### Deferred
 
-- **T2-10** 多任务并行验证：功能已就绪，但未做系统性测试
+- **T2-10** Multi-task parallel verification: functionality is ready but not systematically tested
 
-### Phase 3 — 已完成 ✅ (commit `TBD`)
+### Phase 3 — Complete ✅ (commit `TBD`)
 
-- **T3-1** Workspace 配置持久化：`app.getPath('userData')/clawwork-config.json`，Setup 引导页
-- **T3-2** SQLite 数据库初始化：`better-sqlite3`，tasks/messages/artifacts 表，DB 文件在 `<workspacePath>/.clawwork.db`
-- **T3-3** 产物落盘：artifact 文件复制到 workspace，DB 记录，Git auto-commit (simple-git)
-- **T3-4** 文件浏览器 UI：FileBrowser 布局，FileCard 组件，搜索+筛选+类型分组
-- **T3-5** 文件预览面板：FilePreview 组件，代码/文本/图片预览
-- **T3-6** IPC 层：workspace/artifact/settings IPC handlers
+- **T3-1** Workspace config persistence: `app.getPath('userData')/clawwork-config.json`, Setup wizard
+- **T3-2** SQLite database initialization: `better-sqlite3`, tasks/messages/artifacts tables, DB file at `<workspacePath>/.clawwork.db`
+- **T3-3** Artifact persistence: artifact files copied to workspace, DB records created, Git auto-commit (simple-git)
+- **T3-4** File browser UI: FileBrowser layout, FileCard component, search + filter + type grouping
+- **T3-5** File preview panel: FilePreview component, code/text/image preview
+- **T3-6** IPC layer: workspace/artifact/settings IPC handlers
 
-### Phase 3.5 — 已完成 ✅ (待提交)
+### Phase 3.5 — Complete ✅ (pending commit)
 
-Design System + UI 全面重构：shadcn/ui + Framer Motion + Inter/JetBrains Mono 字体
+Design System + full UI overhaul: shadcn/ui + Framer Motion + Inter/JetBrains Mono fonts
 
-- **T3.5-0** 安装依赖：framer-motion, cva, Radix UI 全家桶, @fontsource-variable/*
-- **T3.5-1** 设计系统定义：`design-system.md` 规范 + `design-tokens.ts` TS 常量 + shadcn/ui 基础组件
-- **T3.5-2** 基础层重构：theme.css 重写（字体导入, @layer base, 扩展 CSS 变量）
-- **T3.5-3** 组件重构：ChatMessage, ChatInput, StreamingMessage, ToolCallCard, FileCard, FilePreview 全部用 shadcn/ui + motion 重写
-- **T3.5-4** 布局重构：LeftNav (TaskItem 提取 + DropdownMenu), MainArea (AnimatePresence), RightPanel (Tabs), FileBrowser, Settings, Setup, App.tsx (TooltipProvider)
-- **T3.5-5** 清理：删除 useAgentMessages.ts 死代码
-- **T3.5-6** 验证通过：tsc --noEmit 零错误，dev server 正常启动，UI 截图确认渲染正确
+- **T3.5-0** Install dependencies: framer-motion, cva, Radix UI suite, @fontsource-variable/*
+- **T3.5-1** Design system definition: `design-system.md` spec + `design-tokens.ts` TS constants + shadcn/ui base components
+- **T3.5-2** Foundation refactor: theme.css rewrite (font imports, @layer base, extended CSS variables)
+- **T3.5-3** Component refactor: ChatMessage, ChatInput, StreamingMessage, ToolCallCard, FileCard, FilePreview — all rewritten with shadcn/ui + motion
+- **T3.5-4** Layout refactor: LeftNav (TaskItem extraction + DropdownMenu), MainArea (AnimatePresence), RightPanel (Tabs), FileBrowser, Settings, Setup, App.tsx (TooltipProvider)
+- **T3.5-5** Cleanup: removed useAgentMessages.ts dead code
+- **T3.5-6** Verification passed: tsc --noEmit zero errors, dev server starts normally, UI screenshots confirm correct rendering
 
-### Phase 3.5 Visual Polish — 已完成 ✅ (待提交)
+### Phase 3.5 Visual Polish — Complete ✅ (pending commit)
 
 **Font/Size Bump (13 files):**
-- **T3.5-7** 基础字体 13→14px, avatar/icon/button 尺寸放大, 圆角统一, section labels text-xs, Button danger variant hex→CSS vars
+- **T3.5-7** Base font 13→14px, avatar/icon/button sizes increased, border radius unified, section labels text-xs, Button danger variant hex→CSS vars
 
 **Premium Depth Pass (10 items, all verified):**
-- **T3.5-8** theme.css 新增 12 个 premium CSS Variables（dark+light）: `--accent-hover`, `--accent-soft`, `--accent-soft-hover`, `--bg-elevated`, `--ring-accent`, `--glow-accent`, `--shadow-elevated`, `--shadow-card`, `--border-subtle`, `--danger`, `--danger-bg`
-- **T3.5-9** 3 个 CSS utility classes: `.surface-elevated`, `.glow-accent`, `.ring-accent-focus`
-- **T3.5-10** button.tsx: 新增 `soft` variant + 所有 variants `active:scale-[0.98]` + focus ring `--ring-accent`
+- **T3.5-8** theme.css: 12 new premium CSS Variables (dark+light): `--accent-hover`, `--accent-soft`, `--accent-soft-hover`, `--bg-elevated`, `--ring-accent`, `--glow-accent`, `--shadow-elevated`, `--shadow-card`, `--border-subtle`, `--danger`, `--danger-bg`
+- **T3.5-9** 3 CSS utility classes: `.surface-elevated`, `.glow-accent`, `.ring-accent-focus`
+- **T3.5-10** button.tsx: new `soft` variant + all variants `active:scale-[0.98]` + focus ring `--ring-accent`
 - **T3.5-11** ChatInput: `--bg-elevated` + `--shadow-elevated` + `ring-accent-focus`, send button → `soft` variant
 - **T3.5-12** MainArea WelcomeScreen: radial glow + subtitle + typography hierarchy
-- **T3.5-13** LeftNav "新任务" button: `default` → `soft` variant
-- **T3.5-14** TaskItem: active 左侧 3px accent bar + `whileHover={{ x: 2 }}` 微交互
-- **T3.5-15** ToolCallCard: 左侧状态条 (running=pulse, done=accent, error=red) + shadow-card
-- **T3.5-16** tabs.tsx: 尺寸放大, active 使用 `--bg-elevated` + `--shadow-card`
-- **T3.5-17** dropdown-menu.tsx: 硬编码颜色 → CSS Variables, content 使用 `--bg-elevated` + `--shadow-elevated`
-- **T3.5-18** Setup 页面: radial glow + elevated card form container
+- **T3.5-13** LeftNav "New Task" button: `default` → `soft` variant
+- **T3.5-14** TaskItem: active left-side 3px accent bar + `whileHover={{ x: 2 }}` micro-interaction
+- **T3.5-15** ToolCallCard: left status bar (running=pulse, done=accent, error=red) + shadow-card
+- **T3.5-16** tabs.tsx: sizes increased, active uses `--bg-elevated` + `--shadow-card`
+- **T3.5-17** dropdown-menu.tsx: hardcoded colors → CSS Variables, content uses `--bg-elevated` + `--shadow-elevated`
+- **T3.5-18** Setup page: radial glow + elevated card form container
 
-### 后续 Phase 概览
+### Upcoming Phases
 
-- **Phase 4** — 打磨+打包 (T4-1 ~ T4-7): 主题切换、全局搜索 (FTS5)、Settings、错误处理、electron-builder dmg
+- **Phase 4** — Polish + packaging (T4-1 ~ T4-7): theme toggle, global search (FTS5), Settings, error handling, electron-builder dmg
 
-## 任务依赖图
+## Task Dependency Graph
 
 ```
 Phase 1:
   T1-0 → T1-1 ─────┐
          T1-3 ─────┘→ T1-7 → T1-8 → T1-9
-         T1-4 ─┬→ (Phase 2 UI 依赖)
+         T1-4 ─┬→ (Phase 2 UI depends on these)
          T1-5 ─┘
 
 Phase 2:
-  [T2-1 → T2-2 → T2-3]   Task CRUD 链路（串行）
-  [T2-4 → T2-5 → T2-6 → T2-7]   对话流组件（串行）
-  [T2-8, T2-9]   右侧面板（可并行）
-  T2-10   多任务验证（所有 Phase 2 完成后）
+  [T2-1 → T2-2 → T2-3]   Task CRUD chain (serial)
+  [T2-4 → T2-5 → T2-6 → T2-7]   Chat flow components (serial)
+  [T2-8, T2-9]   Right panel (parallelizable)
+  T2-10   Multi-task verification (after all Phase 2 tasks)
 
 Phase 3:
-  [T3-1 → T3-2 → T3-3]   产物落盘（串行）
-  [T3-4 → T3-5 → T3-6 → T3-7]   文件浏览器（串行）
-  两条线可并行
+  [T3-1 → T3-2 → T3-3]   Artifact persistence (serial)
+  [T3-4 → T3-5 → T3-6 → T3-7]   File browser (serial)
+  Both chains can run in parallel
 
 Phase 4:
-  [T4-1, T4-2, T4-3, T4-4]   全部可并行
-  T4-5 → T4-6 → T4-7   打包链路（串行）
+  [T4-1, T4-2, T4-3, T4-4]   All parallelizable
+  T4-5 → T4-6 → T4-7   Packaging chain (serial)
 ```
 
-## 技术发现（踩坑记录）
+## Technical Discoveries (Lessons Learned)
 
-### Gateway 协议关键细节
+### Gateway Protocol Key Details
 
-1. **Challenge-response 认证**：服务端先发 `connect.challenge`（含 nonce），客户端必须回复 `connect` 请求（protocol=3, client.id=`gateway-client`, mode=`backend`）
-2. **`chat.send` 参数**：`sessionKey` + `message`（不是 `text`）+ `idempotencyKey`（UUID）。返回 `{runId, status: "started"}`，非阻塞
-3. **Chat event payload 结构（关键坑）**：内容在 `payload.message.content[]`，不是 `payload.content[]`。这是 Phase 2 消息不显示的根因
-4. **Preload 路径**：electron-vite 输出 preload 为 `.mjs`（不是 `.js`），主进程加载路径需对应
-5. **`@clawwork/shared` 不能 externalize**：在 electron-vite 配置中必须 bundle 进去
+1. **Challenge-response auth**: Server sends `connect.challenge` (containing nonce) first; client must reply with a `connect` request (protocol=3, client.id=`gateway-client`, mode=`backend`)
+2. **`chat.send` parameters**: `sessionKey` + `message` (not `text`) + `idempotencyKey` (UUID). Returns `{runId, status: "started"}`, non-blocking
+3. **Chat event payload structure (major gotcha)**: Content is at `payload.message.content[]`, not `payload.content[]`. This was the root cause of messages not displaying in Phase 2
+4. **Preload path**: electron-vite outputs preload as `.mjs` (not `.js`); the main process load path must match
+5. **`@clawwork/shared` cannot be externalized**: Must be bundled in the electron-vite config
 
-### Zustand 陷阱
+### Zustand Pitfall
 
-**禁止在 selector 中调用 `get()`**。`useStore((s) => s.someMethod())` 其中 `someMethod` 内部调用 `get()` 会导致无限重渲染（每次返回新对象引用）。解法：直接访问 state 字段 + 模块级 `const EMPTY_ARRAY: T[] = []` 哨兵值避免空数组引用变化。
+**Never call `get()` inside a selector.** `useStore((s) => s.someMethod())` where `someMethod` internally calls `get()` causes infinite re-renders (new object reference each time). Fix: access state fields directly + module-level `const EMPTY_ARRAY: T[] = []` sentinel to avoid empty-array reference changes.
 
-### Gateway 完整协议参考
+### Full Gateway Protocol Reference
 
-详细协议文档已存储在 `~/.agents/memories/-Users-x-git-samzong-clawwork/gateway-ws-protocol.md`，包含：帧格式、连接握手、有效 client ID/mode 枚举、RPC 方法列表、事件类型、chat 消息结构、可用 Agent 列表。
+Detailed protocol documentation is stored in a local agent-memory file (`gateway-ws-protocol.md`), including: frame format, connection handshake, valid client ID/mode enums, RPC method list, event types, chat message structure, available Agent list.
 
-### Tailwind v4 `@layer` 优先级陷阱
+### Tailwind v4 `@layer` Specificity Pitfall
 
-Tailwind v4 将所有 utility classes 输出到 `@layer utilities` 中。根据 CSS 规范，**unlayered 样式的优先级永远高于任何 `@layer` 内的样式**——无论选择器特异性如何。
+Tailwind v4 emits all utility classes into `@layer utilities`. Per the CSS spec, **unlayered styles always have higher specificity than any `@layer` styles** — regardless of selector specificity.
 
-因此，如果在 `theme.css`（`@import "tailwindcss"` 所在文件）中写了 unlayered 的全局 reset：
+If you write unlayered global resets in `theme.css` (the file containing `@import "tailwindcss"`):
 
 ```css
-/* 错误：这会覆盖所有 Tailwind padding/margin utilities */
+/* Wrong: this overrides ALL Tailwind padding/margin utilities */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 ```
 
-则 `pt-14`、`px-4`、`pb-3` 等 **所有** padding/margin utility 都会被覆盖为 0px，完全无效。
+Then `pt-14`, `px-4`, `pb-3`, etc. — **all** padding/margin utilities — will be overridden to 0px, completely ineffective.
 
-**解法：** 删掉这段 reset。Tailwind v4 Preflight（`@layer base`）已经包含了 `* { margin: 0; padding: 0; box-sizing: border-box }`，不需要重复。如果必须写自定义 base 样式，用 `@layer base { ... }` 包裹。
+**Fix:** Remove the reset. Tailwind v4 Preflight (`@layer base`) already includes `* { margin: 0; padding: 0; box-sizing: border-box }`. If you must write custom base styles, wrap them in `@layer base { ... }`.
 
-### Gateway 流式文本是累积快照，不是增量 delta
+### Electron Auto-Screenshot Troubleshooting
 
-Gateway `chat` 事件的 `state: 'delta'` 帧，其 text 内容**可能是累积快照（cumulative snapshot）而非增量 chunk**。同一帧也可能重复发送。如果 `messageStore.appendStreamDelta()` 直接用 `+=` 拼接，会导致消息重复显示（例如 "你好你好你好..."）。
+In dev mode, `main/index.ts` automatically captures a screenshot to `/tmp/clawwork-screenshot.png` after `did-finish-load`, and also supports `Cmd+Shift+S` for manual capture. When screenshots appear unchanged, don't restart repeatedly — use `executeJavaScript` to inject a diagnostic script that dumps `getComputedStyle()` to `/tmp/clawwork-debug.json` to directly verify whether CSS is taking effect.
 
-**解法：** 使用 `mergeGatewayStreamText(previous, incoming)` 做智能合并（已在 `@clawwork/shared/constants.ts` 中实现）。合并逻辑：
-1. `incoming === previous` → 忽略重复帧
-2. `incoming.startsWith(previous)` → 累积快照，直接替换为 incoming
-3. `previous.startsWith(incoming)` → 旧快照重放，忽略
-4. 否则 → 真正的增量 chunk，正常拼接
+## Known Issues & Risks
 
-同时，`state: 'final'` 帧也可能携带最后一段文本，必须在 `finalizeStream()` 之前先 `appendStreamDelta()` 处理掉，否则丢失末尾内容。
-
-### Electron 自动截图排障方法
-
-开发模式下 `main/index.ts` 自动在 `did-finish-load` 后截图到 `/tmp/clawwork-screenshot.png`，也支持 `Cmd+Shift+S` 手动触发。当截图看起来没变化时，不要反复重启——用 `executeJavaScript` 注入诊断脚本 dump `getComputedStyle()` 到 `/tmp/clawwork-debug.json`，直接确认 CSS 是否生效。
-
-## 已知问题与风险
-
-| 问题 | 影响 | 参考 |
+| Issue | Impact | Reference |
 |---|---|---|
-| Gateway 协议文档不完整 | 需要读源码反推 | 参考 feishu/dingtalk plugin |
-| Gateway 广播无 session 过滤 | 客户端需自行按 sessionKey 过滤 | [#32579](https://github.com/openclaw/openclaw/issues/32579) |
-| `mediaLocalRoots` 安全校验 | 文件发送可能被拒 | [#20258](https://github.com/openclaw/openclaw/issues/20258), [#36477](https://github.com/openclaw/openclaw/issues/36477) |
-| Session 4AM 自动重置 | 长期 Task 上下文被清 | 需服务端配置禁用自动重置 |
+| Incomplete Gateway protocol docs | Must reverse-engineer from source | Refer to feishu/dingtalk plugin |
+| Gateway broadcasts without session filtering | Client must filter by sessionKey | [#32579](https://github.com/openclaw/openclaw/issues/32579) |
+| `mediaLocalRoots` security check | File sends may be rejected | [#20258](https://github.com/openclaw/openclaw/issues/20258), [#36477](https://github.com/openclaw/openclaw/issues/36477) |
+| Session auto-reset at 4 AM | Long-running Task context gets cleared | Requires server-side config to disable auto-reset |
 
-## 编码约定
+## Coding Conventions
 
-- TypeScript strict 模式，不允许 `any`
-- 所有颜色使用 CSS Variables，不硬编码 hex
-- 组件文件放 `layouts/` (布局组件) 或 `components/` (通用组件)，按功能目录组织
-- 状态管理用 Zustand，每个 domain 一个 store（`taskStore`, `messageStore`, `uiStore`）
-- WebSocket 消息类型统一在 `@clawwork/shared` 定义，desktop 引用
+- TypeScript strict mode; `any` is not allowed
+- All colors via CSS Variables — no hardcoded hex values
+- Component files go in `layouts/` (layout components) or `components/` (general components), organized by feature
+- State management uses Zustand, one store per domain (`taskStore`, `messageStore`, `uiStore`)
+- WebSocket message types are defined in `@clawwork/shared`; desktop imports from there
 
-## 设计文档
+## Design Documents
 
-- 完整设计文档见仓库外的 `openclaw-desktop-design.md`（v0.2），包含数据模型、UI 原型、ADR、28 个开发任务的完整描述和验收标准。
-- 设计系统规范见仓库内 `design-system.md`，包含色彩、字体、间距、圆角、阴影、动效、组件状态的完整定义。
+- Full design doc: `docs/openclaw-desktop-design.md` (v0.2), covering data models, UI prototypes, ADRs, and complete descriptions + acceptance criteria for all 28 dev tasks.
+- Design system spec: `design-system.md` in the repo, covering colors, fonts, spacing, border radius, shadows, animations, and component states.

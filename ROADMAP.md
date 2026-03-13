@@ -1,17 +1,14 @@
 # ROADMAP
 
-## 功能
+## Features
 
-- 支持展示 Task(session) 当前的模型和 Agent 名称
-- 支持 Github Workflow 自动构建和 release 测试
-- 支持 e2e 冒烟测试
-- 更新 logo
+- Support i18n internationalization — English and Chinese first, with a language switcher in Settings; clean all Chinese text from source code files
 
-## 缺陷
+## Bugs
 
-- 文件浏览器的下拉筛选比较原始，看下 @openclaw-desktop-design.md 的文件浏览器设计
+- The file browser dropdown filter is primitive; review the file browser design in `docs/openclaw-desktop-design.md`
 
-## 开发
+## Development
 
-- 需要有单测
-- 需要有 e2e 测试
+- Need unit tests
+- Need e2e tests
