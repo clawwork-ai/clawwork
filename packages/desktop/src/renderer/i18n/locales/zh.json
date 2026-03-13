@@ -1,14 +1,16 @@
 {
   "common": {
-    "newTask": "\u65b0\u4efb\u52a1",
-    "completed": "\u5df2\u5b8c\u6210",
-    "inProgress": "\u8fdb\u884c\u4e2d",
-    "settings": "\u8bbe\u7f6e",
-    "fileManager": "\u6587\u4ef6\u7ba1\u7406",
-    "noFiles": "\u6682\u65e0\u6587\u4ef6",
-    "justNow": "\u521a\u521a",
-    "notConfigured": "\u672a\u914d\u7f6e",
-    "noTitle": "(\u65e0\u6807\u9898)"
+    "newTask": "新任务",
+    "completed": "已完成",
+    "inProgress": "进行中",
+    "settings": "设置",
+    "fileManager": "文件管理",
+    "noFiles": "暂无文件",
+    "justNow": "刚刚",
+    "notConfigured": "未配置",
+    "noTitle": "(无标题)",
+    "cancel": "取消",
+    "save": "保存"
   },
   "leftNav": {
     "searchTasks": "搜索任务…",
@@ -17,96 +19,126 @@
     "archivedChats": "归档对话"
   },
   "mainArea": {
-    "welcomeSubtitle": "AI-powered task execution",
-    "welcomeDesc1": "\u63cf\u8ff0\u4f60\u7684\u4efb\u52a1\uff0cAI \u5c06\u5e2e\u4f60\u89c4\u5212\u5e76\u6267\u884c\u3002",
-    "welcomeDesc2": "\u8fc7\u7a0b\u4e2d\u4ea7\u751f\u7684\u6587\u4ef6\u4f1a\u81ea\u52a8\u5f52\u6863\u7ba1\u7406\u3002",
-    "starOnGithub": "\u89c9\u5f97\u597d\u7528\uff1f\u5728 GitHub \u4e0a\u7ed9\u6211\u4eec\u4e00\u9897 Star",
-    "toggleContextPanel": "\u5207\u6362\u4e0a\u4e0b\u6587\u9762\u677f"
+    "welcomeSubtitle": "AI 驱动的任务执行",
+    "welcomeDesc1": "描述你的任务，AI 将帮你规划并执行。",
+    "welcomeDesc2": "过程中产生的文件会自动归档管理。",
+    "starOnGithub": "觉得好用？在 GitHub 上给我们一颗 Star",
+    "toggleContextPanel": "切换上下文面板",
+    "selectGateway": "选择服务器"
   },
   "settings": {
-    "appearance": "\u5916\u89c2",
-    "theme": "\u4e3b\u9898",
-    "connection": "\u8fde\u63a5",
-    "gatewayUrl": "Gateway \u5730\u5740",
-    "tokenPlaceholder": "\u7559\u7a7a\u4f7f\u7528\u9ed8\u8ba4 Token",
-    "saveAndReconnect": "\u4fdd\u5b58\u5e76\u91cd\u8fde",
-    "storage": "\u5b58\u50a8",
-    "workspace": "\u5de5\u4f5c\u7a7a\u95f4",
-    "workspaceHint": "AI \u4ea7\u7269\u4fdd\u5b58\u4f4d\u7f6e\uff08\u53ea\u8bfb\uff09",
-    "about": "\u5173\u4e8e",
-    "githubStar": "\u5728 GitHub \u4e0a\u7ed9\u6211\u4eec Star \u2b50",
-    "submitIssue": "\u63d0\u4ea4 Issue / \u53cd\u9988\u95ee\u9898",
-    "version": "\u7248\u672c"
+    "appearance": "外观",
+    "theme": "主题",
+    "themeUpdated": "主题已更新",
+    "gateways": "网关",
+    "addGateway": "添加网关",
+    "editGateway": "编辑网关",
+    "gatewayName": "名称",
+    "gatewayNamePlaceholder": "例如：生产服务器",
+    "gatewayUrl": "Gateway 地址",
+    "tokenPlaceholder": "留空使用默认 Token",
+    "password": "密码",
+    "passwordPlaceholder": "Gateway 密码（可选）",
+    "testConnection": "测试连接",
+    "testSuccess": "连接成功",
+    "testFailed": "连接失败",
+    "invalidUrl": "无效的 URL",
+    "nameRequired": "名称不能为空",
+    "gatewayAdded": "网关已添加",
+    "gatewayUpdated": "网关已更新",
+    "gatewayRemoved": "网关已移除",
+    "defaultUpdated": "默认网关已更新",
+    "default": "默认",
+    "setAsDefault": "设为默认",
+    "edit": "编辑",
+    "remove": "移除",
+    "noGateways": "暂无配置的网关",
+    "addFirstGateway": "添加第一个网关",
+    "storage": "存储",
+    "workspace": "工作空间",
+    "workspaceHint": "AI 产物保存位置（只读）",
+    "about": "关于",
+    "githubStar": "在 GitHub 上给我们 Star ⭐",
+    "submitIssue": "提交 Issue / 反馈问题",
+    "version": "版本"
   },
   "setup": {
-    "welcome": "\u6b22\u8fce\u4f7f\u7528 ClawWork",
-    "desc1": "AI \u4ea7\u7269\u5c06\u4fdd\u5b58\u5230\u5de5\u4f5c\u7a7a\u95f4\u76ee\u5f55\uff0c",
-    "desc2": "\u5e76\u901a\u8fc7 Git \u81ea\u52a8\u7248\u672c\u7ba1\u7406\u3002",
-    "workspaceDir": "\u5de5\u4f5c\u7a7a\u95f4\u76ee\u5f55",
-    "selectDir": "\u9009\u62e9\u76ee\u5f55\u2026",
-    "browse": "\u6d4f\u89c8\u2026",
-    "initializing": "\u521d\u59cb\u5316\u4e2d\u2026",
-    "getStarted": "\u5f00\u59cb\u4f7f\u7528",
-    "errSelectDir": "\u8bf7\u9009\u62e9\u5de5\u4f5c\u7a7a\u95f4\u76ee\u5f55",
-    "errInitFailed": "\u521d\u59cb\u5316\u5931\u8d25"
+    "welcome": "欢迎使用 ClawWork",
+    "desc1": "AI 产物将保存到工作空间目录，",
+    "desc2": "并通过 Git 自动版本管理。",
+    "workspaceDir": "工作空间目录",
+    "selectDir": "选择目录…",
+    "browse": "浏览…",
+    "initializing": "初始化中…",
+    "getStarted": "开始使用",
+    "errSelectDir": "请选择工作空间目录",
+    "errInitFailed": "初始化失败",
+    "gatewayDesc": "配置要连接的 OpenClaw Gateway 服务器。",
+    "gatewayConfig": "网关配置",
+    "next": "下一步",
+    "back": "返回",
+    "skipGateway": "暂时跳过"
   },
   "rightPanel": {
-    "context": "\u4e0a\u4e0b\u6587",
-    "progress": "\u8fdb\u5ea6",
-    "artifacts": "\u4ea7\u7269",
-    "noProgress": "\u6682\u65e0\u8fdb\u5ea6\u4fe1\u606f",
-    "xOfYCompleted": "{{done}}/{{total}} \u5df2\u5b8c\u6210",
-    "noCommits": "\u6682\u65e0\u63d0\u4ea4"
+    "context": "上下文",
+    "progress": "进度",
+    "artifacts": "产物",
+    "noProgress": "暂无进度信息",
+    "xOfYCompleted": "{{done}}/{{total}} 已完成",
+    "noCommits": "暂无提交"
   },
   "fileBrowser": {
-    "searchFiles": "\u641c\u7d22\u6587\u4ef6\u2026",
-    "allTasks": "\u5168\u90e8\u4efb\u52a1",
-    "sortByDate": "\u6309\u65f6\u95f4",
-    "sortByName": "\u6309\u540d\u79f0",
-    "sortByType": "\u6309\u7c7b\u578b"
+    "searchFiles": "搜索文件…",
+    "allTasks": "全部任务",
+    "sortByDate": "按时间",
+    "sortByName": "按名称",
+    "sortByType": "按类型"
   },
   "search": {
-    "tasks": "\u4efb\u52a1",
-    "messages": "\u6d88\u606f",
-    "files": "\u6587\u4ef6",
-    "noResults": "\u672a\u627e\u5230\u7ed3\u679c"
+    "tasks": "任务",
+    "messages": "消息",
+    "files": "文件",
+    "noResults": "未找到结果"
   },
   "contextMenu": {
-    "markCompleted": "\u6807\u8bb0\u5b8c\u6210",
-    "archive": "\u5f52\u6863",
-    "reactivate": "\u91cd\u65b0\u6fc0\u6d3b"
+    "markCompleted": "标记完成",
+    "archive": "归档",
+    "reactivate": "重新激活"
   },
   "connection": {
-    "connected": "\u5df2\u8fde\u63a5",
-    "connecting": "\u8fde\u63a5\u4e2d\u2026",
-    "disconnected": "\u672a\u8fde\u63a5",
-    "gatewayDown": "Gateway \u65ad\u5f00"
+    "connected": "已连接",
+    "connecting": "连接中…",
+    "disconnected": "未连接",
+    "gatewayDown": "Gateway 断开",
+    "reconnected": "Gateway 已重连",
+    "lostConnection": "Gateway 连接断开",
+    "reconnecting": "正在尝试重连…"
   },
   "filePreview": {
-    "goToSource": "\u8df3\u8f6c\u5230\u6e90\u6d88\u606f",
-    "cannotPreview": "\u65e0\u6cd5\u9884\u89c8\u6b64\u6587\u4ef6\u7c7b\u578b"
+    "goToSource": "跳转到源消息",
+    "cannotPreview": "无法预览此文件类型"
   },
   "archived": {
     "empty": "暂无归档对话"
   },
   "errors": {
-    "requestFailed": "\u8bf7\u6c42\u51fa\u9519",
-    "sendFailed": "\u53d1\u9001\u5931\u8d25"
+    "requestFailed": "请求出错",
+    "sendFailed": "发送失败"
   },
   "chatInput": {
-    "describeTask": "\u63cf\u8ff0\u4f60\u7684\u4efb\u52a1\u2026",
-    "offlineReadOnly": "\u79bb\u7ebf\u6a21\u5f0f \u2014 \u53ea\u8bfb",
-    "createTaskFirst": "\u8bf7\u5148\u521b\u5efa\u4e00\u4e2a\u4efb\u52a1\u2026",
-    "poweredBy": "\u7531 OpenClaw \u9a71\u52a8 \u00b7 \u4efb\u52a1\u6587\u4ef6\u81ea\u52a8 Git \u5f52\u6863",
-    "offlineHint": "\u79bb\u7ebf\u6a21\u5f0f \u2014 \u53ef\u6d4f\u89c8\u5386\u53f2\u4efb\u52a1\u548c\u6587\u4ef6",
-    "image": "\u56fe\u7247"
+    "describeTask": "描述你的任务…",
+    "offlineReadOnly": "离线模式 — 只读",
+    "createTaskFirst": "请先创建一个任务…",
+    "poweredBy": "由 OpenClaw 驱动 · 任务文件自动 Git 归档",
+    "offlineHint": "离线模式 — 可浏览历史任务和文件",
+    "image": "图片"
   },
   "chatMessage": {
-    "copyMessage": "\u590d\u5236\u6d88\u606f",
-    "copyCode": "\u590d\u5236\u4ee3\u7801",
-    "copied": "\u5df2\u590d\u5236"
+    "copyMessage": "复制消息",
+    "copyCode": "复制代码",
+    "copied": "已复制"
   },
   "dialog": {
-    "selectWorkspaceDir": "\u9009\u62e9\u5de5\u4f5c\u7a7a\u95f4\u76ee\u5f55"
+    "selectWorkspaceDir": "选择工作空间目录"
   }
 }

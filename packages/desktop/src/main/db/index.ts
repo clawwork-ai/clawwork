@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS tasks (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   tags TEXT NOT NULL DEFAULT '[]',
-  artifact_dir TEXT NOT NULL DEFAULT ''
+  artifact_dir TEXT NOT NULL DEFAULT '',
+  gateway_id TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS messages (
@@ -51,6 +52,14 @@ export function initDatabase(workspacePath: string): void {
   sqlite = new Database(dbPath);
   sqlite.pragma('journal_mode = WAL');
   sqlite.exec(CREATE_TABLES_SQL);
+
+  // Migration: add gateway_id column to existing tasks table
+  try {
+    sqlite.exec("ALTER TABLE tasks ADD COLUMN gateway_id TEXT NOT NULL DEFAULT ''");
+  } catch {
+    // Column already exists, ignore
+  }
+
   initFTS(sqlite);
 
   db = drizzle(sqlite, { schema });

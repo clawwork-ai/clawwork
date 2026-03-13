@@ -1,29 +1,54 @@
 import type { BrowserWindow } from 'electron';
-import { GatewayClient } from './gateway-client.js';
-import { readConfig } from '../workspace/config.js';
-import { GATEWAY_WS_PORT } from '@clawwork/shared';
 import type { GatewayClientConfig } from '@clawwork/shared';
+import { GatewayClient } from './gateway-client.js';
+import { readConfig, buildGatewayAuth } from '../workspace/config.js';
 
-let gatewayClient: GatewayClient | null = null;
+const gatewayClients = new Map<string, GatewayClient>();
 
-function buildGatewayConfig(): GatewayClientConfig {
-  const cfg = readConfig();
-  const url = cfg?.gatewayUrl ?? `ws://127.0.0.1:${GATEWAY_WS_PORT}`;
-  const token = cfg?.bootstrapToken ?? process.env.OPENCLAW_GATEWAY_TOKEN ?? '';
-  return { url, auth: { token } };
+export function initAllGateways(mainWindow: BrowserWindow): void {
+  const config = readConfig();
+  const gateways = config?.gateways ?? [];
+  for (const gw of gateways) {
+    const client = new GatewayClient({ id: gw.id, name: gw.name, url: gw.url, auth: buildGatewayAuth(gw) });
+    client.setMainWindow(mainWindow);
+    client.connect();
+    gatewayClients.set(gw.id, client);
+  }
 }
 
-export function initWebSockets(mainWindow: BrowserWindow): void {
-  gatewayClient = new GatewayClient(buildGatewayConfig());
-  gatewayClient.setMainWindow(mainWindow);
-  gatewayClient.connect();
+export function getGatewayClient(gatewayId: string): GatewayClient | null {
+  return gatewayClients.get(gatewayId) ?? null;
 }
 
-export function getGatewayClient(): GatewayClient | null {
-  return gatewayClient;
+export function getAllGatewayClients(): Map<string, GatewayClient> {
+  return gatewayClients;
 }
 
-export function destroyWebSockets(): void {
-  gatewayClient?.destroy();
-  gatewayClient = null;
+export function addGateway(config: GatewayClientConfig, mainWindow: BrowserWindow): GatewayClient {
+  const client = new GatewayClient(config);
+  client.setMainWindow(mainWindow);
+  client.connect();
+  gatewayClients.set(config.id, client);
+  return client;
+}
+
+export function removeGateway(gatewayId: string): void {
+  const client = gatewayClients.get(gatewayId);
+  if (client) {
+    client.destroy();
+    gatewayClients.delete(gatewayId);
+  }
+}
+
+export function rebindAllWindows(mainWindow: BrowserWindow): void {
+  for (const client of gatewayClients.values()) {
+    client.setMainWindow(mainWindow);
+  }
+}
+
+export function destroyAllGateways(): void {
+  for (const client of gatewayClients.values()) {
+    client.destroy();
+  }
+  gatewayClients.clear();
 }

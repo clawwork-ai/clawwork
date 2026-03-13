@@ -49,6 +49,7 @@ Desktop → Gateway (:18789): `chat.send` sends user messages (`deliver: false` 
 │           │   ├── index.ts         # Electron main process, hiddenInset titleBar
 │           │   ├── ws/
 │           │   │   ├── gateway-client.ts  # GatewayClient: challenge-response auth, heartbeat, reconnect
+│           │   │   ├── device-identity.ts # Ed25519 keypair, device auth signing, device token persistence
 │           │   │   ├── window-utils.ts    # BrowserWindow helpers
 │           │   │   └── index.ts           # initWebSockets, getters, destroy
 │           │   └── ipc/
@@ -286,14 +287,49 @@ Phase 4:
 ### Gateway Protocol Key Details
 
 1. **Challenge-response auth**: Server sends `connect.challenge` (containing nonce) first; client must reply with a `connect` request (protocol=3, client.id=`gateway-client`, mode=`backend`)
+   - **`client.id` MUST be the literal string `"gateway-client"`**. The server schema validates this field against a constant/enum — any other value (e.g. dynamic IDs like `clawwork-<uuid>`) will be rejected with `invalid connect params: at /client/id: must be equal to constant`.
 2. **`chat.send` parameters**: `sessionKey` + `message` (not `text`) + `idempotencyKey` (UUID). Returns `{runId, status: "started"}`, non-blocking
 3. **Chat event payload structure (major gotcha)**: Content is at `payload.message.content[]`, not `payload.content[]`. This was the root cause of messages not displaying in Phase 2
 4. **Preload path**: electron-vite outputs preload as `.mjs` (not `.js`); the main process load path must match
 5. **`@clawwork/shared` cannot be externalized**: Must be bundled in the electron-vite config
 
+### Device Identity is MANDATORY for Scoped RPCs (Critical)
+
+**The #1 gateway auth pitfall**: connecting without a `device` field in the `connect` request causes the server to **silently clear all requested scopes to `[]`**. Every scope-protected RPC (`chat.send` needs `operator.write`, `sessions.list` needs `operator.read`) then fails with `missing scope`.
+
+Server logic (`gateway-cli-Bmg642Lj.js:22579`):
+```javascript
+if (!device && (!isControlUi || decision.kind !== "allow")) clearUnboundScopes();
+```
+
+When `device` is null and the client is not Control UI, scopes are wiped. Token/password auth alone is NOT enough — the server distinguishes between "authenticated" and "authorized with scopes".
+
+**Required device auth flow:**
+1. Generate Ed25519 keypair, persist to `userData/device-identity.json` (mode 0o600)
+2. `deviceId` = SHA256 hex of raw 32-byte public key (strip SPKI prefix `302a300506032b6570032100`)
+3. `publicKey` in connect params = raw public key bytes as base64url (no padding)
+4. Build signature payload string (v3 format): `"v3|deviceId|clientId|clientMode|role|scopes|signedAtMs|token|nonce|platform|deviceFamily"` (pipe-separated, metadata ASCII-lowercased via `normalizeMetadataForAuth`)
+5. Sign with Ed25519 private key, encode signature as base64url
+6. `device` field in connect params: `{ id, publicKey, signature, signedAt, nonce }` where `nonce` comes from the `connect.challenge` event
+
+**Auto-pairing**: Local backend clients (`client.id === "gateway-client"`, `mode === "backend"`, local IP, no browser origin header, shared auth OK) auto-pair without user approval.
+
+**Device token persistence**: Server issues a `deviceToken` in the `hello-ok` response at `payload.auth.deviceToken`. Store it per-gateway in `userData/device-tokens.json` and send it back on subsequent connections via `auth.deviceToken`. This provides a secondary auth channel — if the shared gateway token changes, the device token still works (until explicitly revoked). Implementation: `device-identity.ts` has `saveDeviceToken()` / `loadDeviceToken()` / `removeDeviceToken()`.
+
+**Server source locations** (OpenClaw 2026.3.12, for future reverse-engineering):
+- `gateway-cli-Bmg642Lj.js:22222` — `shouldSkipBackendSelfPairing()`
+- `gateway-cli-Bmg642Lj.js:22505-22579` — device auth validation + `clearUnboundScopes`
+- `gateway-cli-Bmg642Lj.js:22883-22907` — `hello-ok` payload construction (includes `auth.deviceToken`)
+- `reply-BEN3KNDZ.js:58052` — `buildDeviceAuthPayloadV3()` reference implementation
+- `reply-BEN3KNDZ.js:58017-58028` — `normalizeDeviceMetadataForAuth()`
+
 ### Zustand Pitfall
 
 **Never call `get()` inside a selector.** `useStore((s) => s.someMethod())` where `someMethod` internally calls `get()` causes infinite re-renders (new object reference each time). Fix: access state fields directly + module-level `const EMPTY_ARRAY: T[] = []` sentinel to avoid empty-array reference changes.
+
+### `ws` Library `close()` on CONNECTING Socket
+
+The `ws` npm package (v8.x) throws `"WebSocket was closed before the connection was established"` if you call `ws.close()` on a socket in `CONNECTING` state before the HTTP upgrade request has been created (`_req` is undefined). This happens in `GatewayClient.cleanup()` when `destroy()` is called while a connection attempt is in flight (e.g. test-gateway timeout, or rapid add/remove of gateways). **Always wrap `ws.close()` in try-catch** inside cleanup paths.
 
 ### Full Gateway Protocol Reference
 

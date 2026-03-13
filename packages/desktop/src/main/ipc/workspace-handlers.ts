@@ -39,7 +39,7 @@ export function registerWorkspaceHandlers(): void {
     try {
       await initWorkspace(workspacePath);
       initDatabase(workspacePath);
-      writeConfig({ workspacePath });
+      writeConfig({ workspacePath, gateways: [] });
       return { ok: true };
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'setup failed';

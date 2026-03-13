@@ -62,7 +62,11 @@ export default function ChatInput() {
   const addMessage = useMessageStore((s) => s.addMessage);
   const setProcessing = useMessageStore((s) => s.setProcessing);
   const updateTaskTitle = useTaskStore((s) => s.updateTaskTitle);
-  const isOffline = useUiStore((s) => s.gatewayStatus === 'disconnected');
+  const isOffline = useUiStore((s) => {
+    if (!activeTask) return false;
+    const gwStatus = s.gatewayStatusMap[activeTask.gatewayId];
+    return gwStatus === 'disconnected' || gwStatus === undefined;
+  });
 
   // Revoke blob URLs on cleanup
   useEffect(() => {
@@ -125,14 +129,20 @@ export default function ChatInput() {
             content: await readAsBase64(img.file),
           })))
         : undefined;
-      await window.clawwork.sendMessage(activeTask.sessionKey, content || '', attachments);
+      const result = await window.clawwork.sendMessage(activeTask.gatewayId, activeTask.sessionKey, content || '', attachments);
+      if (result && !result.ok) {
+        setProcessing(activeTask.id, false);
+        const msg = result.error || t('errors.sendFailed');
+        addMessage(activeTask.id, 'system', `${t('errors.sendFailed')}: ${msg}`);
+        toast.error('Failed to send message', { description: msg });
+      }
     } catch (err) {
       setProcessing(activeTask.id, false);
       const msg = err instanceof Error ? err.message : String(err);
       addMessage(activeTask.id, 'system', `${t('errors.sendFailed')}: ${msg}`);
       toast.error('Failed to send message', { description: msg });
     }
-  }, [activeTask, addMessage, setProcessing, updateTaskTitle, isOffline, pendingImages, t]);
+  }, [activeTask, addMessage, setProcessing, updateTaskTitle, isOffline, pendingImages, t]);;
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {

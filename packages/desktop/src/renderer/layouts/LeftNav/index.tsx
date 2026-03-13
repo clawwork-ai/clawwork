@@ -29,7 +29,14 @@ export default function LeftNav() {
   const setMainView = useUiStore((s) => s.setMainView)
   const settingsOpen = useUiStore((s) => s.settingsOpen)
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen)
-  const gwStatus = useUiStore((s) => s.gatewayStatus)
+  const gwStatusMap = useUiStore((s) => s.gatewayStatusMap)
+
+  // Aggregate: if any gateway connected → connected; any connecting → connecting; else disconnected
+  const gwStatusValues = Object.values(gwStatusMap)
+  const aggregatedGwStatus: 'connected' | 'connecting' | 'disconnected' =
+    gwStatusValues.some((s) => s === 'connected') ? 'connected'
+    : gwStatusValues.some((s) => s === 'connecting') ? 'connecting'
+    : 'disconnected'
 
   const { items, isOpen, openMenu, closeMenu } = useTaskContextMenu(updateTaskStatus)
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null)
@@ -71,7 +78,7 @@ export default function LeftNav() {
   return (
     <div className="flex flex-col h-full pt-14 relative">
       <div className="px-4 pb-3 space-y-2 flex-shrink-0">
-        <Button variant="soft" onClick={createTask} className="titlebar-no-drag w-full gap-2">
+        <Button variant="soft" onClick={() => createTask()} className="titlebar-no-drag w-full gap-2">
           <Plus size={16} /> {t('common.newTask')}
         </Button>
         <div className="titlebar-no-drag relative">
@@ -180,7 +187,7 @@ export default function LeftNav() {
             <TooltipContent side="right">{t('leftNav.appSettings')}</TooltipContent>
           </Tooltip>
           <div className="ml-auto">
-            <ConnectionStatus gatewayStatus={gwStatus} />
+            <ConnectionStatus gatewayStatus={aggregatedGwStatus} />
           </div>
         </div>
       </div>

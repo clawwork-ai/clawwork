@@ -30,7 +30,7 @@ export async function hydrateFromLocal(): Promise<void> {
 }
 
 /**
- * Discover sessions from Gateway and adopt any that don't exist locally.
+ * Discover sessions from all connected Gateways and adopt any that don't exist locally.
  * Called once on first Gateway connect.
  */
 export async function syncFromGateway(): Promise<void> {

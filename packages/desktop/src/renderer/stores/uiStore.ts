@@ -7,7 +7,13 @@ type Theme = 'dark' | 'light';
 
 export type Language = 'en' | 'zh';
 
-type GatewayConnectionStatus = 'connected' | 'connecting' | 'disconnected';
+export type GatewayConnectionStatus = 'connected' | 'connecting' | 'disconnected';
+
+export interface GatewayInfo {
+  id: string;
+  name: string;
+  color?: string;
+}
 
 interface UiState {
   rightPanelOpen: boolean;
@@ -26,8 +32,17 @@ interface UiState {
   language: Language;
   setLanguage: (lang: Language) => void;
 
-  gatewayStatus: GatewayConnectionStatus;
-  setGatewayStatus: (status: GatewayConnectionStatus) => void;
+  /** Per-gateway connection status map */
+  gatewayStatusMap: Record<string, GatewayConnectionStatus>;
+  setGatewayStatusByGateway: (gatewayId: string, status: GatewayConnectionStatus) => void;
+
+  /** Default gateway for new tasks */
+  defaultGatewayId: string | null;
+  setDefaultGatewayId: (id: string | null) => void;
+
+  /** Cached gateway metadata for display (name, color) */
+  gatewayInfoMap: Record<string, GatewayInfo>;
+  setGatewayInfoMap: (map: Record<string, GatewayInfo>) => void;
 
   /** taskIds with unread messages (background tasks that received new content) */
   unreadTaskIds: Set<string>;
@@ -56,8 +71,17 @@ export const useUiStore = create<UiState>((set) => ({
     window.clawwork.updateSettings({ language: lang });
   },
 
-  gatewayStatus: 'connecting',
-  setGatewayStatus: (status) => set({ gatewayStatus: status }),
+  gatewayStatusMap: {},
+  setGatewayStatusByGateway: (gatewayId, status) =>
+    set((s) => ({
+      gatewayStatusMap: { ...s.gatewayStatusMap, [gatewayId]: status },
+    })),
+
+  defaultGatewayId: null,
+  setDefaultGatewayId: (id) => set({ defaultGatewayId: id }),
+
+  gatewayInfoMap: {},
+  setGatewayInfoMap: (map) => set({ gatewayInfoMap: map }),
 
   unreadTaskIds: new Set(),
   markUnread: (taskId) =>

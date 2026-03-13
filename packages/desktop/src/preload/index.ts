@@ -1,30 +1,34 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { electronAPI } from '@electron-toolkit/preload';
-import type { ClawWorkAPI } from './clawwork';
+import type { ClawWorkAPI, GatewayServerConfig } from './clawwork';
 
 function buildApi(): ClawWorkAPI {
   return {
-    sendMessage: (sessionKey: string, content: string, attachments?: { mimeType: string; fileName: string; content: string }[]) =>
-      ipcRenderer.invoke('ws:send-message', { sessionKey, content, attachments }),
-    chatHistory: (sessionKey: string, limit?: number) =>
-      ipcRenderer.invoke('ws:chat-history', { sessionKey, limit }),
-    listSessions: () =>
-      ipcRenderer.invoke('ws:list-sessions'),
+    sendMessage: (gatewayId: string, sessionKey: string, content: string, attachments?: { mimeType: string; fileName: string; content: string }[]) =>
+      ipcRenderer.invoke('ws:send-message', { gatewayId, sessionKey, content, attachments }),
+    chatHistory: (gatewayId: string, sessionKey: string, limit?: number) =>
+      ipcRenderer.invoke('ws:chat-history', { gatewayId, sessionKey, limit }),
+    listSessions: (gatewayId: string) =>
+      ipcRenderer.invoke('ws:list-sessions', { gatewayId }),
     gatewayStatus: () =>
       ipcRenderer.invoke('ws:gateway-status'),
     syncSessions: () =>
       ipcRenderer.invoke('ws:sync-sessions'),
+    abortChat: (gatewayId: string, sessionKey: string) =>
+      ipcRenderer.invoke('ws:abort-chat', { gatewayId, sessionKey }),
+    listGateways: () =>
+      ipcRenderer.invoke('ws:list-gateways'),
 
     onGatewayEvent: (callback) => {
       const listener = (_event: Electron.IpcRendererEvent, data: unknown): void => {
-        callback(data as { event: string; payload: Record<string, unknown> });
+        callback(data as { event: string; payload: Record<string, unknown>; gatewayId: string });
       };
       ipcRenderer.on('gateway-event', listener);
       return () => { ipcRenderer.removeListener('gateway-event', listener); };
     },
     onGatewayStatus: (callback) => {
       const listener = (_event: Electron.IpcRendererEvent, status: unknown): void => {
-        callback(status as { connected: boolean; error?: string });
+        callback(status as { connected: boolean; error?: string; gatewayId: string });
       };
       ipcRenderer.on('gateway-status', listener);
       return () => { ipcRenderer.removeListener('gateway-status', listener); };
@@ -68,13 +72,24 @@ function buildApi(): ClawWorkAPI {
     updateSettings: (partial: Record<string, unknown>) =>
       ipcRenderer.invoke('settings:update', partial),
 
+    addGateway: (gateway: GatewayServerConfig) =>
+      ipcRenderer.invoke('settings:add-gateway', gateway),
+    removeGateway: (gatewayId: string) =>
+      ipcRenderer.invoke('settings:remove-gateway', gatewayId),
+    updateGateway: (gatewayId: string, partial: Partial<GatewayServerConfig>) =>
+      ipcRenderer.invoke('settings:update-gateway', gatewayId, partial),
+    setDefaultGateway: (gatewayId: string) =>
+      ipcRenderer.invoke('settings:set-default-gateway', gatewayId),
+    testGateway: (url: string, auth: { token?: string; password?: string }) =>
+      ipcRenderer.invoke('settings:test-gateway', url, auth),
+
     globalSearch: (query: string) =>
       ipcRenderer.invoke('search:global', query),
 
     persistTask: (task: {
       id: string; sessionKey: string; sessionId: string; title: string;
       status: string; createdAt: string; updatedAt: string; tags: string[];
-      artifactDir: string;
+      artifactDir: string; gatewayId: string;
     }) => ipcRenderer.invoke('data:create-task', task),
 
     persistTaskUpdate: (params: {

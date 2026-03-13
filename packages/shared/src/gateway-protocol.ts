@@ -31,26 +31,36 @@ export type GatewayFrame =
   | GatewayEventFrame;
 
 export type GatewayAuth =
-  | { token: string }
-  | { password: string };
+  | { token: string; deviceToken?: string }
+  | { password: string; deviceToken?: string };
 
 export interface GatewayConnectParams {
   minProtocol: 3;
   maxProtocol: 3;
   client: {
-    id: 'gateway-client';
+    id: string;
     displayName: string;
     version: string;
     platform: string;
     mode: 'backend';
+    deviceFamily?: string;
   };
   caps: string[];
   auth: GatewayAuth;
   role: 'operator';
   scopes: string[];
+  device?: {
+    id: string;
+    publicKey: string;
+    signature: string;
+    signedAt: number;
+    nonce: string;
+  };
 }
 
 export interface GatewayClientConfig {
+  id: string;
+  name: string;
   url: string;
   auth: GatewayAuth;
 }

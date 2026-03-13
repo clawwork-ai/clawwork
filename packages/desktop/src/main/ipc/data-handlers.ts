@@ -13,6 +13,7 @@ interface CreateTaskParams {
   updatedAt: string;
   tags: string[];
   artifactDir: string;
+  gatewayId: string;
 }
 
 interface UpdateTaskParams {
@@ -49,6 +50,7 @@ export function registerDataHandlers(): void {
         updatedAt: task.updatedAt,
         tags: JSON.stringify(task.tags),
         artifactDir: task.artifactDir,
+        gatewayId: task.gatewayId,
       }).run();
       return { ok: true };
     } catch (err) {

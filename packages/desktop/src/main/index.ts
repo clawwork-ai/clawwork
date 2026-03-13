@@ -2,7 +2,7 @@ import { app, shell, BrowserWindow, ipcMain, globalShortcut } from 'electron';
 import { join } from 'path';
 import { writeFileSync } from 'fs';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
-import { initWebSockets, destroyWebSockets } from './ws/index.js';
+import { initAllGateways, destroyAllGateways, rebindAllWindows } from './ws/index.js';
 import { registerWsHandlers } from './ipc/ws-handlers.js';
 import { registerArtifactHandlers } from './ipc/artifact-handlers.js';
 import { registerWorkspaceHandlers } from './ipc/workspace-handlers.js';
@@ -92,13 +92,13 @@ app.whenReady().then(() => {
   }
 
   const mainWindow = createWindow();
-  initWebSockets(mainWindow);
+  initAllGateways(mainWindow);
   setupDevScreenshot(mainWindow);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       const win = createWindow();
-      initWebSockets(win);
+      rebindAllWindows(win);
     }
   });
 });
@@ -111,6 +111,6 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   globalShortcut.unregisterAll();
-  destroyWebSockets();
+  destroyAllGateways();
   closeDatabase();
 });

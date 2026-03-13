@@ -10,6 +10,7 @@ export const tasks = sqliteTable('tasks', {
   updatedAt: text('updated_at').notNull(),
   tags: text('tags').notNull().default('[]'),
   artifactDir: text('artifact_dir').notNull().default(''),
+  gatewayId: text('gateway_id').notNull().default(''),
 });
 
 export const messages = sqliteTable('messages', {

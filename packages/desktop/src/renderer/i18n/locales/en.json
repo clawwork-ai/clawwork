@@ -8,7 +8,9 @@
     "noFiles": "No files yet",
     "justNow": "just now",
     "notConfigured": "Not configured",
-    "noTitle": "(Untitled)"
+    "noTitle": "(Untitled)",
+    "cancel": "Cancel",
+    "save": "Save"
   },
   "leftNav": {
     "searchTasks": "Search tasks\u2026",
@@ -21,15 +23,37 @@
     "welcomeDesc1": "Describe your task and AI will plan and execute it.",
     "welcomeDesc2": "Files produced along the way are auto-archived.",
     "starOnGithub": "Enjoying ClawWork? Give us a star on GitHub",
-    "toggleContextPanel": "Toggle context panel"
+    "toggleContextPanel": "Toggle context panel",
+    "selectGateway": "Select server"
   },
   "settings": {
     "appearance": "Appearance",
     "theme": "Theme",
-    "connection": "Connection",
+    "themeUpdated": "Theme updated",
+    "gateways": "Gateways",
+    "addGateway": "Add Gateway",
+    "editGateway": "Edit Gateway",
+    "gatewayName": "Name",
+    "gatewayNamePlaceholder": "e.g. Production Server",
     "gatewayUrl": "Gateway URL",
     "tokenPlaceholder": "Leave empty to use default token",
-    "saveAndReconnect": "Save & Reconnect",
+    "password": "Password",
+    "passwordPlaceholder": "Gateway password (optional)",
+    "testConnection": "Test Connection",
+    "testSuccess": "Connection successful",
+    "testFailed": "Connection failed",
+    "invalidUrl": "Invalid URL",
+    "nameRequired": "Name is required",
+    "gatewayAdded": "Gateway added",
+    "gatewayUpdated": "Gateway updated",
+    "gatewayRemoved": "Gateway removed",
+    "defaultUpdated": "Default gateway updated",
+    "default": "Default",
+    "setAsDefault": "Set as default",
+    "edit": "Edit",
+    "remove": "Remove",
+    "noGateways": "No gateways configured",
+    "addFirstGateway": "Add your first gateway",
     "storage": "Storage",
     "workspace": "Workspace",
     "workspaceHint": "AI artifact save location (read-only)",
@@ -48,7 +72,12 @@
     "initializing": "Initializing\u2026",
     "getStarted": "Get Started",
     "errSelectDir": "Please select a workspace directory",
-    "errInitFailed": "Initialization failed"
+    "errInitFailed": "Initialization failed",
+    "gatewayDesc": "Configure the OpenClaw Gateway server to connect to.",
+    "gatewayConfig": "Gateway Configuration",
+    "next": "Next",
+    "back": "Back",
+    "skipGateway": "Skip for now"
   },
   "rightPanel": {
     "context": "Context",
@@ -80,7 +109,10 @@
     "connected": "Connected",
     "connecting": "Connecting\u2026",
     "disconnected": "Disconnected",
-    "gatewayDown": "Gateway down"
+    "gatewayDown": "Gateway down",
+    "reconnected": "Gateway reconnected",
+    "lostConnection": "Gateway disconnected",
+    "reconnecting": "Attempting to reconnect..."
   },
   "filePreview": {
     "goToSource": "Go to source message",

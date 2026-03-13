@@ -1,6 +1,6 @@
 import { type MouseEvent } from 'react'
 import { motion } from 'framer-motion'
-import { MessageSquare, Circle, Loader2 } from 'lucide-react'
+import { MessageSquare, Circle, Loader2, Server } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { formatRelativeTime } from '@/lib/utils'
@@ -8,6 +8,7 @@ import { useTaskStore } from '@/stores/taskStore'
 import { useMessageStore } from '@/stores/messageStore'
 import { useUiStore } from '@/stores/uiStore'
 import { motion as motionPresets } from '@/styles/design-tokens'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import type { Task } from '@clawwork/shared'
 
 interface TaskItemProps {
@@ -23,6 +24,8 @@ export default function TaskItem({ task, active, onContextMenu }: TaskItemProps)
   const hasUnread = useUiStore((s) => s.unreadTaskIds.has(task.id))
   const setMainView = useUiStore((s) => s.setMainView)
   const isStreaming = useMessageStore((s) => !!s.streamingByTask[task.id])
+  const gwInfo = useUiStore((s) => s.gatewayInfoMap[task.gatewayId])
+  const multiGateway = useUiStore((s) => Object.keys(s.gatewayInfoMap).length > 1)
 
   const handleClick = (): void => {
     setActiveTask(task.id)
@@ -64,6 +67,20 @@ export default function TaskItem({ task, active, onContextMenu }: TaskItemProps)
             <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-muted)]">
               {t('common.completed')}
             </span>
+          )}
+          {multiGateway && gwInfo && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-muted)] max-w-[80px] truncate"
+                  style={gwInfo.color ? { borderLeft: `2px solid ${gwInfo.color}` } : undefined}
+                >
+                  <Server size={9} className="flex-shrink-0 opacity-60" />
+                  {gwInfo.name}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>{gwInfo.name}</TooltipContent>
+            </Tooltip>
           )}
           <p className="text-xs text-[var(--text-muted)]">
             {formatRelativeTime(new Date(task.updatedAt))}

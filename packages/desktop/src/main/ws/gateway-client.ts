@@ -17,6 +17,13 @@ import type {
 } from '@clawwork/shared';
 import type { BrowserWindow } from 'electron';
 import { sendToWindow } from './window-utils.js';
+import {
+  loadOrCreateDeviceIdentity,
+  buildDeviceConnectPayload,
+  saveDeviceToken,
+  loadDeviceToken,
+  type DeviceIdentity,
+} from './device-identity.js';
 
 type PendingReq = {
   resolve: (payload: Record<string, unknown>) => void;
@@ -35,17 +42,36 @@ export class GatewayClient {
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private pendingRequests = new Map<string, PendingReq>();
   private destroyed = false;
+  private noReconnect = false;
   private wsUrl: string;
   private auth: GatewayAuth;
+  private gatewayId: string;
+  private gatewayName: string;
+  private connectNonce: string | null = null;
+  private deviceIdentity: DeviceIdentity;
 
-  constructor(config: GatewayClientConfig) {
+  constructor(config: GatewayClientConfig, opts?: { noReconnect?: boolean }) {
+    this.gatewayId = config.id;
+    this.gatewayName = config.name;
     this.wsUrl = config.url;
     this.auth = config.auth;
+    this.deviceIdentity = loadOrCreateDeviceIdentity();
+    if (opts?.noReconnect) this.noReconnect = true;
   }
 
-  updateConfig(url: string, auth?: GatewayAuth): void {
-    this.wsUrl = url;
-    if (auth) this.auth = auth;
+  get id(): string {
+    return this.gatewayId;
+  }
+
+  get name(): string {
+    return this.gatewayName;
+  }
+
+  updateConfig(config: Partial<GatewayClientConfig>): void {
+    if (config.id !== undefined) this.gatewayId = config.id;
+    if (config.name !== undefined) this.gatewayName = config.name;
+    if (config.url !== undefined) this.wsUrl = config.url;
+    if (config.auth !== undefined) this.auth = config.auth;
     this.reconnectAttempts = 0;
     this.connect();
   }
@@ -58,11 +84,11 @@ export class GatewayClient {
     if (this.destroyed) return;
     this.cleanup();
 
-    console.log(`[gateway] connecting to ${this.wsUrl}`);
+    console.log(`[gateway:${this.gatewayId}] connecting to ${this.wsUrl}`);
     this.ws = new WebSocket(this.wsUrl);
 
     this.ws.on('open', () => {
-      console.log('[gateway] ws open, waiting for challenge...');
+      console.log(`[gateway:${this.gatewayId}] ws open, waiting for challenge...`);
     });
 
     this.ws.on('message', (raw) => {
@@ -70,14 +96,20 @@ export class GatewayClient {
     });
 
     this.ws.on('close', (code, reason) => {
-      console.log(`[gateway] closed: ${code} ${reason}`);
+      console.log(`[gateway:${this.gatewayId}] closed: ${code} ${reason}`);
       this.authenticated = false;
       this.stopHeartbeat();
+      if (this.mainWindow) {
+        sendToWindow(this.mainWindow, 'gateway-status', {
+          gatewayId: this.gatewayId,
+          connected: false,
+        });
+      }
       this.scheduleReconnect();
     });
 
     this.ws.on('error', (err) => {
-      console.error(`[gateway] ws error: ${err.message}`);
+      console.error(`[gateway:${this.gatewayId}] ws error: ${err.message}`);
     });
   }
 
@@ -86,7 +118,7 @@ export class GatewayClient {
     try {
       frame = JSON.parse(raw) as GatewayFrame;
     } catch {
-      console.error('[gateway] invalid JSON frame');
+      console.error(`[gateway:${this.gatewayId}] invalid JSON frame`);
       return;
     }
 
@@ -104,7 +136,17 @@ export class GatewayClient {
 
   private handleEvent(frame: { event: string; payload: Record<string, unknown>; seq?: number }): void {
     if (frame.event === 'connect.challenge') {
-      this.handleChallenge();
+      const nonce =
+        frame.payload && typeof frame.payload.nonce === 'string'
+          ? frame.payload.nonce.trim()
+          : '';
+      if (!nonce) {
+        console.error(`[gateway:${this.gatewayId}] connect challenge missing nonce`);
+        this.ws?.close(1008, 'connect challenge missing nonce');
+        return;
+      }
+      this.connectNonce = nonce;
+      this.handleChallenge(nonce);
       return;
     }
 
@@ -112,14 +154,39 @@ export class GatewayClient {
       return;
     }
 
-    sendToWindow(this.mainWindow, 'gateway-event', {
-      event: frame.event,
-      payload: frame.payload,
-      seq: frame.seq,
-    });
+    if (this.mainWindow) {
+      sendToWindow(this.mainWindow, 'gateway-event', {
+        gatewayId: this.gatewayId,
+        event: frame.event,
+        payload: frame.payload,
+        seq: frame.seq,
+      });
+    }
   }
 
-  private handleChallenge(): void {
+  private buildAuthWithDeviceToken(): GatewayAuth {
+    const storedToken = loadDeviceToken(this.gatewayId);
+    if (storedToken) {
+      return { ...this.auth, deviceToken: storedToken };
+    }
+    return this.auth;
+  }
+
+  private handleChallenge(nonce: string): void {
+    const signatureToken = 'token' in this.auth ? this.auth.token : null;
+    const scopes = ['operator.admin', 'operator.write', 'operator.read', 'operator.approvals', 'operator.pairing'];
+
+    const device = buildDeviceConnectPayload(this.deviceIdentity, {
+      clientId: 'gateway-client',
+      clientMode: 'backend',
+      role: 'operator',
+      scopes,
+      nonce,
+      token: signatureToken,
+      platform: process.platform,
+      deviceFamily: null,
+    });
+
     const params: GatewayConnectParams = {
       minProtocol: 3,
       maxProtocol: 3,
@@ -131,28 +198,51 @@ export class GatewayClient {
         mode: 'backend',
       },
       caps: ['tool-events'],
-      auth: this.auth,
+      auth: this.buildAuthWithDeviceToken(),
       role: 'operator',
-      scopes: ['operator.admin', 'operator.approvals', 'operator.pairing'],
+      scopes,
+      device,
     };
 
     this.sendReq('connect', params as unknown as Record<string, unknown>)
       .then((payload) => {
         const pType = payload['type'] as string | undefined;
         if (pType === 'hello-ok') {
-          console.log('[gateway] authenticated');
+          console.log(`[gateway:${this.gatewayId}] authenticated`);
           this.authenticated = true;
           this.reconnectAttempts = 0;
+          this.storeDeviceTokenFromPayload(payload);
           this.startHeartbeat();
-          sendToWindow(this.mainWindow, 'gateway-status', { connected: true });
+          if (this.mainWindow) {
+            sendToWindow(this.mainWindow, 'gateway-status', {
+              gatewayId: this.gatewayId,
+              connected: true,
+            });
+          }
         } else {
-          console.error('[gateway] unexpected connect response:', payload);
+          console.error(`[gateway:${this.gatewayId}] unexpected connect response:`, JSON.stringify(payload));
         }
       })
       .catch((err: Error) => {
-        console.error('[gateway] connect handshake failed:', err.message);
+        console.error(`[gateway:${this.gatewayId}] connect handshake failed:`, err.message, err);
         this.ws?.close();
       });
+  }
+
+  private storeDeviceTokenFromPayload(payload: Record<string, unknown>): void {
+    const auth = payload['auth'] as Record<string, unknown> | undefined;
+    if (!auth) return;
+    const token = auth['deviceToken'];
+    const role = auth['role'];
+    const issuedAtMs = auth['issuedAtMs'];
+    if (typeof token === 'string' && token) {
+      saveDeviceToken(
+        this.gatewayId,
+        token,
+        typeof role === 'string' ? role : 'operator',
+        typeof issuedAtMs === 'number' ? issuedAtMs : Date.now(),
+      );
+    }
   }
 
   private handleResponse(frame: GatewayResFrame): void {
@@ -227,7 +317,7 @@ export class GatewayClient {
     this.heartbeatTimer = setInterval(() => {
       if (this.ws?.readyState === WebSocket.OPEN) {
         this.sendReq('health', {}).catch(() => {
-          console.warn('[gateway] heartbeat failed');
+          console.warn(`[gateway:${this.gatewayId}] heartbeat failed`);
         });
       }
     }, HEARTBEAT_INTERVAL_MS);
@@ -241,19 +331,22 @@ export class GatewayClient {
   }
 
   private scheduleReconnect(): void {
-    if (this.destroyed) return;
+    if (this.destroyed || this.noReconnect) return;
     if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-      console.error('[gateway] max reconnect attempts reached');
-      sendToWindow(this.mainWindow, 'gateway-status', {
-        connected: false,
-        error: 'max reconnect attempts',
-      });
+      console.error(`[gateway:${this.gatewayId}] max reconnect attempts reached`);
+      if (this.mainWindow) {
+        sendToWindow(this.mainWindow, 'gateway-status', {
+          gatewayId: this.gatewayId,
+          connected: false,
+          error: 'max reconnect attempts',
+        });
+      }
       return;
     }
 
     const delay = RECONNECT_DELAY_MS * Math.pow(2, Math.min(this.reconnectAttempts, 5));
     this.reconnectAttempts++;
-    console.log(`[gateway] reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
+    console.log(`[gateway:${this.gatewayId}] reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
 
     this.reconnectTimer = setTimeout(() => {
       this.connect();
@@ -262,6 +355,7 @@ export class GatewayClient {
 
   private cleanup(): void {
     this.stopHeartbeat();
+    this.connectNonce = null;
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
@@ -273,8 +367,12 @@ export class GatewayClient {
     }
     if (this.ws) {
       this.ws.removeAllListeners();
-      if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
-        this.ws.close();
+      try {
+        if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
+          this.ws.close();
+        }
+      } catch {
+        // ws lib may throw when closing a CONNECTING socket before the HTTP upgrade completes
       }
       this.ws = null;
     }

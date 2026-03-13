@@ -1,15 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { PanelRightOpen, RotateCcw, Archive } from 'lucide-react'
+import { PanelRightOpen, RotateCcw, Archive, Plus, Server, ChevronDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useTaskStore } from '@/stores/taskStore'
 import { useMessageStore, EMPTY_MESSAGES } from '@/stores/messageStore'
-import { useUiStore } from '@/stores/uiStore'
+import { useUiStore, type GatewayInfo } from '@/stores/uiStore'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { motion as motionPresets } from '@/styles/design-tokens'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import {
+  DropdownMenu, DropdownMenuTrigger,
+  DropdownMenuContent, DropdownMenuItem,
+} from '@/components/ui/dropdown-menu'
 import ChatMessage from '@/components/ChatMessage'
 import StreamingMessage from '@/components/StreamingMessage'
 import ThinkingIndicator from '@/components/ThinkingIndicator'
@@ -26,6 +30,26 @@ interface MainAreaProps {
 
 function WelcomeScreen() {
   const { t } = useTranslation()
+  const gatewayInfoMap = useUiStore((s) => s.gatewayInfoMap)
+  const defaultGatewayId = useUiStore((s) => s.defaultGatewayId)
+  const createTask = useTaskStore((s) => s.createTask)
+  const gateways = Object.values(gatewayInfoMap)
+  const hasMultiple = gateways.length > 1
+  const [selectedGwId, setSelectedGwId] = useState(defaultGatewayId ?? gateways[0]?.id ?? '')
+
+  // Sync when defaultGatewayId loads asynchronously
+  useEffect(() => {
+    if (defaultGatewayId && !selectedGwId) {
+      setSelectedGwId(defaultGatewayId)
+    }
+  }, [defaultGatewayId, selectedGwId])
+
+  const selectedGw = gatewayInfoMap[selectedGwId]
+
+  const handleCreate = useCallback(() => {
+    createTask(hasMultiple ? selectedGwId : undefined)
+  }, [createTask, hasMultiple, selectedGwId])
+
   return (
     <motion.div
       {...motionPresets.fadeIn}
@@ -42,11 +66,42 @@ function WelcomeScreen() {
         <br />
         {t('mainArea.welcomeDesc2')}
       </p>
+
+      <div className="mt-8 flex items-center gap-2">
+        {hasMultiple && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-1.5 text-sm">
+                <Server size={14} />
+                <span className="max-w-[120px] truncate">{selectedGw?.name ?? t('mainArea.selectGateway')}</span>
+                <ChevronDown size={12} className="opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center">
+              {gateways.map((gw) => (
+                <DropdownMenuItem
+                  key={gw.id}
+                  onClick={() => setSelectedGwId(gw.id)}
+                  className={cn(gw.id === selectedGwId && 'font-medium text-[var(--accent)]')}
+                >
+                  <Server size={12} className="mr-2 flex-shrink-0" />
+                  {gw.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+        <Button variant="soft" onClick={handleCreate} className="gap-2">
+          <Plus size={16} />
+          {t('common.newTask')}
+        </Button>
+      </div>
+
       <a
         href="https://github.com/clawwork-ai/clawwork"
         target="_blank"
         rel="noreferrer"
-        className="mt-8 text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+        className="mt-6 text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
       >
         {t('mainArea.starOnGithub')} ⭐
       </a>
@@ -59,6 +114,9 @@ function ChatHeader({ onTogglePanel }: { onTogglePanel: () => void }) {
   const activeTask = useTaskStore((s) =>
     s.tasks.find((task) => task.id === s.activeTaskId),
   )
+  const gatewayInfoMap = useUiStore((s) => s.gatewayInfoMap)
+  const hasMultipleGateways = Object.keys(gatewayInfoMap).length > 1
+  const gwInfo = activeTask ? gatewayInfoMap[activeTask.gatewayId] : undefined
 
   return (
     <header className="titlebar-drag flex items-center justify-between h-12 px-5 border-b border-[var(--border)] flex-shrink-0">
@@ -76,6 +134,20 @@ function ChatHeader({ onTogglePanel }: { onTogglePanel: () => void }) {
             )}>
               {activeTask.status === 'active' ? t('common.inProgress') : t('common.completed')}
             </span>
+            {hasMultipleGateways && gwInfo && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span
+                    className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-muted)]"
+                    style={gwInfo.color ? { borderLeft: `2px solid ${gwInfo.color}` } : undefined}
+                  >
+                    <Server size={10} />
+                    <span className="max-w-[80px] truncate">{gwInfo.name}</span>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{gwInfo.name}</TooltipContent>
+              </Tooltip>
+            )}
           </>
         ) : (
           <h2 className="font-medium text-[var(--text-muted)]">ClawWork</h2>

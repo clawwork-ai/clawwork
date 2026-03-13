@@ -60,7 +60,7 @@ export function useGatewayEventDispatcher(): void {
   activeTaskIdRef.current = activeTaskId;
 
   useEffect(() => {
-    const handler = (data: { event: string; payload: Record<string, unknown> }): void => {
+    const handler = (data: { event: string; payload: Record<string, unknown>; gatewayId: string }): void => {
       if (data.event === 'chat') {
         handleChatEvent(data.payload as unknown as ChatEventPayload);
       } else if (data.event === 'agent') {
@@ -166,32 +166,59 @@ export function useGatewayEventDispatcher(): void {
     hydrateFromLocal();
   }, []);
 
-  const wasConnectedRef = useRef(true);
+  const connectedGatewaysRef = useRef<Set<string>>(new Set());
   const syncedRef = useRef(false);
   useEffect(() => {
-    const setGwStatus = useUiStore.getState().setGatewayStatus;
-    window.clawwork.gatewayStatus().then((s) => {
-      const status = s.connected ? 'connected' as const : 'disconnected' as const;
-      setGwStatus(status);
-      wasConnectedRef.current = s.connected;
-      if (s.connected && !syncedRef.current) {
+    const { setGatewayStatusByGateway, setDefaultGatewayId } = useUiStore.getState();
+
+    // Fetch initial status for all gateways
+    window.clawwork.gatewayStatus().then((statusMap) => {
+      for (const [gwId, info] of Object.entries(statusMap)) {
+        const status = info.connected ? 'connected' as const : 'disconnected' as const;
+        setGatewayStatusByGateway(gwId, status);
+        if (info.connected) {
+          connectedGatewaysRef.current.add(gwId);
+        }
+      }
+      // If any gateway connected and not yet synced, sync
+      if (connectedGatewaysRef.current.size > 0 && !syncedRef.current) {
         syncedRef.current = true;
         syncFromGateway();
       }
     });
+
+    // Set default gateway and cache gateway info from config
+    window.clawwork.listGateways().then((gateways) => {
+      const defaultGw = gateways.find((g) => g.isDefault);
+      if (defaultGw) {
+        setDefaultGatewayId(defaultGw.id);
+      } else if (gateways.length > 0) {
+        setDefaultGatewayId(gateways[0].id);
+      }
+      // Cache gateway info for display (TaskItem badges, selectors)
+      const infoMap: Record<string, { id: string; name: string; color?: string }> = {};
+      for (const gw of gateways) {
+        infoMap[gw.id] = { id: gw.id, name: gw.name, color: gw.color };
+      }
+      useUiStore.getState().setGatewayInfoMap(infoMap);
+    });
+
     const removeGatewayStatus = window.clawwork.onGatewayStatus((s) => {
+      const wasConnected = connectedGatewaysRef.current.has(s.gatewayId);
       const next = s.connected ? 'connected' as const : s.error ? 'disconnected' as const : 'connecting' as const;
-      setGwStatus(next);
-      if (s.connected && !wasConnectedRef.current) {
-        toast.success('Gateway reconnected');
+      setGatewayStatusByGateway(s.gatewayId, next);
+
+      if (s.connected && !wasConnected) {
+        connectedGatewaysRef.current.add(s.gatewayId);
+        toast.success(i18n.t('connection.reconnected'));
         if (!syncedRef.current) {
           syncedRef.current = true;
           syncFromGateway();
         }
-      } else if (!s.connected && wasConnectedRef.current) {
-        toast.warning('Gateway disconnected', { description: 'Attempting to reconnect...' });
+      } else if (!s.connected && wasConnected) {
+        connectedGatewaysRef.current.delete(s.gatewayId);
+        toast.warning(i18n.t('connection.lostConnection'), { description: i18n.t('connection.reconnecting') });
       }
-      wasConnectedRef.current = s.connected;
     });
     return removeGatewayStatus;
   }, []);
@@ -250,4 +277,3 @@ function autoTitleIfNeeded(taskId: string): void {
     }
   }
 }
-

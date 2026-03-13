@@ -16,6 +16,25 @@ export type ArtifactType = 'file' | 'code' | 'image' | 'link' | 'structured_data
 export type ToolCallStatus = 'running' | 'done' | 'error';
 
 // ------------------------------------------------------------
+// Gateway Server Configuration
+// ------------------------------------------------------------
+
+import type { GatewayAuth } from './gateway-protocol.js';
+
+/** A configured OpenClaw Gateway server instance */
+export interface GatewayServer {
+  id: string;
+  name: string;
+  url: string;
+  auth: GatewayAuth;
+  isDefault: boolean;
+  color?: string;
+}
+
+// Re-export GatewayAuth so consumers don't need a second import
+export type { GatewayAuth } from './gateway-protocol.js';
+
+// ------------------------------------------------------------
 // Core Entities
 // ------------------------------------------------------------
 
@@ -29,6 +48,7 @@ export interface Task {
   updatedAt: string;
   tags: string[];
   artifactDir: string;
+  gatewayId: string;
 }
 
 /** Image attachment stored with a user message for UI preview */

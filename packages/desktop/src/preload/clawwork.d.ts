@@ -12,13 +12,41 @@ interface ConnectionStatus {
 interface GatewayEvent {
   event: string;
   payload: Record<string, unknown>;
+  gatewayId: string;
   seq?: number;
+}
+
+interface GatewayStatusEvent {
+  gatewayId: string;
+  connected: boolean;
+  error?: string;
+}
+
+export interface GatewayServerConfig {
+  id: string;
+  name: string;
+  url: string;
+  token?: string;
+  password?: string;
+  isDefault?: boolean;
+  color?: string;
+}
+
+interface GatewayStatusMap {
+  [gatewayId: string]: { connected: boolean; name: string };
+}
+
+interface GatewayListItem extends GatewayServerConfig {
+  connected: boolean;
 }
 
 interface AppSettings {
   workspacePath: string;
   theme?: 'dark' | 'light';
   language?: 'en' | 'zh';
+  gateways: GatewayServerConfig[];
+  defaultGatewayId?: string;
+  // Legacy fields kept for migration detection
   gatewayUrl?: string;
   bootstrapToken?: string;
   password?: string;
@@ -49,6 +77,7 @@ interface PersistedTask {
   updatedAt: string;
   tags: string[];
   artifactDir: string;
+  gatewayId: string;
 }
 
 interface PersistedMessage {
@@ -60,6 +89,7 @@ interface PersistedMessage {
 }
 
 interface DiscoveredSession {
+  gatewayId: string;
   taskId: string;
   sessionKey: string;
   title: string;
@@ -86,19 +116,27 @@ interface ChatAttachment {
 }
 
 export interface ClawWorkAPI {
-  sendMessage: (sessionKey: string, content: string, attachments?: ChatAttachment[]) => Promise<IpcResult>;
-  chatHistory: (sessionKey: string, limit?: number) => Promise<IpcResult>;
-  listSessions: () => Promise<IpcResult>;
-  gatewayStatus: () => Promise<ConnectionStatus>;
-  syncSessions: () => Promise<SyncResult>;
+  // Chat — all require gatewayId
+  sendMessage: (gatewayId: string, sessionKey: string, content: string, attachments?: ChatAttachment[]) => Promise<IpcResult>;
+  chatHistory: (gatewayId: string, sessionKey: string, limit?: number) => Promise<IpcResult>;
+  listSessions: (gatewayId: string) => Promise<IpcResult>;
+  abortChat: (gatewayId: string, sessionKey: string) => Promise<IpcResult>;
 
+  // Gateway status — returns map of all gateways
+  gatewayStatus: () => Promise<GatewayStatusMap>;
+  syncSessions: () => Promise<SyncResult>;
+  listGateways: () => Promise<GatewayListItem[]>;
+
+  // Push events from main process
   onGatewayEvent: (callback: (data: GatewayEvent) => void) => (() => void);
-  onGatewayStatus: (callback: (status: ConnectionStatus) => void) => (() => void);
+  onGatewayStatus: (callback: (status: GatewayStatusEvent) => void) => (() => void);
   removeAllListeners: (channel: string) => void;
 
+  // Data persistence
   loadTasks: () => Promise<ListResult<PersistedTask>>;
   loadMessages: (taskId: string) => Promise<ListResult<PersistedMessage>>;
 
+  // Artifacts
   saveArtifact: (params: {
     taskId: string;
     sourcePath: string;
@@ -111,21 +149,32 @@ export interface ClawWorkAPI {
   readArtifactFile: (localPath: string) => Promise<IpcResult>;
   onArtifactSaved: (callback: (artifact: unknown) => void) => void;
 
+  // Workspace
   isWorkspaceConfigured: () => Promise<boolean>;
   getWorkspacePath: () => Promise<string | null>;
   getDefaultWorkspacePath: () => Promise<string>;
   browseWorkspace: () => Promise<string | null>;
   setupWorkspace: (path: string) => Promise<IpcResult>;
 
+  // Settings
   getSettings: () => Promise<AppSettings | null>;
   updateSettings: (partial: Partial<AppSettings>) => Promise<{ ok: boolean; config: AppSettings }>;
 
+  // Gateway management
+  addGateway: (gateway: GatewayServerConfig) => Promise<IpcResult>;
+  removeGateway: (gatewayId: string) => Promise<IpcResult>;
+  updateGateway: (gatewayId: string, partial: Partial<GatewayServerConfig>) => Promise<IpcResult>;
+  setDefaultGateway: (gatewayId: string) => Promise<IpcResult>;
+  testGateway: (url: string, auth: { token?: string; password?: string }) => Promise<IpcResult>;
+
+  // Search
   globalSearch: (query: string) => Promise<SearchResponse>;
 
+  // Task persistence
   persistTask: (task: {
     id: string; sessionKey: string; sessionId: string; title: string;
     status: string; createdAt: string; updatedAt: string; tags: string[];
-    artifactDir: string;
+    artifactDir: string; gatewayId: string;
   }) => Promise<IpcResult>;
 
   persistTaskUpdate: (params: {

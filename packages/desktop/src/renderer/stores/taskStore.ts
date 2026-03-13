@@ -1,13 +1,14 @@
 import { create } from 'zustand';
 import { buildSessionKey } from '@clawwork/shared';
 import type { Task, TaskStatus } from '@clawwork/shared';
+import { useUiStore } from './uiStore';
 
 interface TaskState {
   tasks: Task[];
   activeTaskId: string | null;
   hydrated: boolean;
 
-  createTask: () => Task;
+  createTask: (gatewayId?: string) => Task;
   setActiveTask: (id: string | null) => void;
   updateTaskTitle: (id: string, title: string) => void;
   updateTaskStatus: (id: string, status: TaskStatus) => void;
@@ -17,6 +18,7 @@ interface TaskState {
     sessionKey: string;
     title: string;
     updatedAt: string;
+    gatewayId: string;
   }[]) => void;
 }
 
@@ -25,7 +27,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   activeTaskId: null,
   hydrated: false,
 
-  createTask: () => {
+  createTask: (gatewayId?) => {
+    const resolvedGatewayId = gatewayId ?? useUiStore.getState().defaultGatewayId ?? '';
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
     const task: Task = {
@@ -38,6 +41,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       updatedAt: now,
       tags: [],
       artifactDir: '',
+      gatewayId: resolvedGatewayId,
     };
     set((s) => ({ tasks: [task, ...s.tasks], activeTaskId: id }));
     window.clawwork.persistTask(task).catch(() => {});
@@ -97,6 +101,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           updatedAt: d.updatedAt,
           tags: [],
           artifactDir: '',
+          gatewayId: d.gatewayId,
         };
         newTasks.push(task);
       }
