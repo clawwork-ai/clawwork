@@ -19,6 +19,7 @@
     "welcomeSubtitle": "AI-powered task execution",
     "welcomeDesc1": "Describe your task and AI will plan and execute it.",
     "welcomeDesc2": "Files produced along the way are auto-archived.",
+    "starOnGithub": "Enjoying ClawWork? Give us a star on GitHub",
     "toggleContextPanel": "Toggle context panel"
   },
   "settings": {
@@ -31,7 +32,10 @@
     "storage": "Storage",
     "workspace": "Workspace",
     "workspaceHint": "AI artifact save location (read-only)",
-    "about": "About"
+    "about": "About",
+    "githubStar": "Star us on GitHub ⭐",
+    "submitIssue": "Submit Issue / Feedback",
+    "version": "Version"
   },
   "setup": {
     "welcome": "Welcome to ClawWork",

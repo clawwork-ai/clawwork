@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { X, Moon, Sun, Globe } from 'lucide-react'
+import { X, Moon, Sun, Globe, Star, Bug } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -177,11 +177,42 @@ export default function Settings({ onClose }: SettingsProps) {
           </div>
         </section>
 
-        {/* Version */}
+        {/* About */}
         <section>
           <p className={sectionLabel}>{t('settings.about')}</p>
-          <div className={cardClass}>
-            <p className="text-sm text-[var(--text-primary)]">ClawWork v0.1.0</p>
+          <div className={cn(cardClass, 'space-y-4')}>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-[var(--text-secondary)]">{t('settings.version')}</span>
+              <span className="text-sm text-[var(--text-primary)] font-mono">v0.1.0</span>
+            </div>
+            <div className="flex flex-col gap-2">
+              <a
+                href="https://github.com/clawwork-ai/clawwork"
+                target="_blank"
+                rel="noreferrer"
+                className={cn(
+                  'flex items-center justify-center gap-2 h-9 px-4 rounded-lg text-sm font-medium transition-colors',
+                  'bg-[var(--accent)] text-[var(--bg-primary)]',
+                  'hover:bg-[var(--accent-hover)] active:scale-[0.98]',
+                )}
+              >
+                <Star size={14} />
+                {t('settings.githubStar')}
+              </a>
+              <a
+                href="https://github.com/clawwork-ai/clawwork/issues/new"
+                target="_blank"
+                rel="noreferrer"
+                className={cn(
+                  'flex items-center justify-center gap-2 h-9 px-4 rounded-lg text-sm font-medium transition-colors',
+                  'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border border-[var(--border)]',
+                  'hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] active:scale-[0.98]',
+                )}
+              >
+                <Bug size={14} />
+                {t('settings.submitIssue')}
+              </a>
+            </div>
           </div>
         </section>
       </div>

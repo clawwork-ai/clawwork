@@ -41,6 +41,14 @@ function WelcomeScreen() {
         <br />
         {t('mainArea.welcomeDesc2')}
       </p>
+      <a
+        href="https://github.com/clawwork-ai/clawwork"
+        target="_blank"
+        rel="noreferrer"
+        className="mt-8 text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+      >
+        {t('mainArea.starOnGithub')} ⭐
+      </a>
     </motion.div>
   )
 }
