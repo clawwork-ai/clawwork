@@ -297,7 +297,7 @@ Phase 4:
 
 ### Full Gateway Protocol Reference
 
-Detailed protocol documentation is stored at `~/.agents/memories/-Users-x-git-samzong-clawwork/gateway-ws-protocol.md`, including: frame format, connection handshake, valid client ID/mode enums, RPC method list, event types, chat message structure, available Agent list.
+Detailed protocol documentation is stored under `~/.agents/memories/**/gateway-ws-protocol.md` (path may vary by machine; generate or locate via your agent runner’s memory directory), including: frame format, connection handshake, valid client ID/mode enums, RPC method list, event types, chat message structure, available Agent list.
 
 ### Tailwind v4 `@layer` Specificity Pitfall
 
