@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { PanelRightOpen } from 'lucide-react'
+import { PanelRightOpen, RotateCcw, Archive } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useTaskStore } from '@/stores/taskStore'
 import { useMessageStore, EMPTY_MESSAGES } from '@/stores/messageStore'
 import { useUiStore } from '@/stores/uiStore'
-import { cn } from '@/lib/utils'
+import { cn, formatRelativeTime } from '@/lib/utils'
 import { motion as motionPresets } from '@/styles/design-tokens'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -154,6 +154,80 @@ function ChatContent() {
   )
 }
 
+function ArchivedTasks() {
+  const { t } = useTranslation()
+  const archivedTasks = useTaskStore((s) =>
+    s.tasks.filter((task) => task.status === 'archived'),
+  )
+  const setActiveTask = useTaskStore((s) => s.setActiveTask)
+  const updateTaskStatus = useTaskStore((s) => s.updateTaskStatus)
+  const setMainView = useUiStore((s) => s.setMainView)
+
+  const handleReactivate = (taskId: string): void => {
+    updateTaskStatus(taskId, 'active')
+  }
+
+  const handleOpenTask = (taskId: string): void => {
+    setActiveTask(taskId)
+    setMainView('chat')
+  }
+
+  return (
+    <div className="flex flex-col h-full pt-14">
+      <header className="flex items-center gap-2.5 h-12 px-5 border-b border-[var(--border)] flex-shrink-0">
+        <Archive size={18} className="text-[var(--text-muted)]" />
+        <h2 className="font-medium text-[var(--text-primary)]">{t('leftNav.archivedChats')}</h2>
+        <span className="text-xs text-[var(--text-muted)]">({archivedTasks.length})</span>
+      </header>
+      <ScrollArea className="flex-1 px-6 py-4">
+        <div className="max-w-3xl mx-auto">
+          {archivedTasks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <Archive size={40} className="text-[var(--text-muted)] opacity-40 mb-4" />
+              <p className="text-sm text-[var(--text-muted)]">{t('archived.empty')}</p>
+            </div>
+          ) : (
+            <AnimatePresence>
+              {archivedTasks.map((task) => (
+                <motion.div
+                  key={task.id}
+                  {...motionPresets.listItem}
+                  exit={{ opacity: 0, x: -8 }}
+                  layout
+                  className="flex items-center gap-3 px-4 py-3 mb-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-[var(--border-accent)] transition-colors cursor-pointer group"
+                  onClick={() => handleOpenTask(task.id)}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-[var(--text-primary)] truncate">
+                      {task.title || t('common.noTitle')}
+                    </p>
+                    <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                      {formatRelativeTime(new Date(task.updatedAt))}
+                    </p>
+                  </div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                        onClick={(e) => { e.stopPropagation(); handleReactivate(task.id) }}
+                      >
+                        <RotateCcw size={14} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{t('contextMenu.reactivate')}</TooltipContent>
+                  </Tooltip>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          )}
+        </div>
+      </ScrollArea>
+    </div>
+  )
+}
+
 export default function MainArea({ onTogglePanel }: MainAreaProps) {
   const mainView = useUiStore((s) => s.mainView)
 
@@ -163,6 +237,10 @@ export default function MainArea({ onTogglePanel }: MainAreaProps) {
         {mainView === 'files' ? (
           <motion.div key="files" {...motionPresets.fadeIn} className="flex-1 min-h-0">
             <FileBrowser />
+          </motion.div>
+        ) : mainView === 'archived' ? (
+          <motion.div key="archived" {...motionPresets.fadeIn} className="flex-1 min-h-0">
+            <ArchivedTasks />
           </motion.div>
         ) : (
           <motion.div key="chat" {...motionPresets.fadeIn} className="flex flex-col flex-1 min-h-0">

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import i18n from '../i18n';
 
-type MainView = 'chat' | 'files';
+type MainView = 'chat' | 'files' | 'archived';
 
 type Theme = 'dark' | 'light';
 
@@ -41,7 +41,7 @@ export const useUiStore = create<UiState>((set) => ({
   setRightPanelOpen: (open) => set({ rightPanelOpen: open }),
 
   mainView: 'chat',
-  setMainView: (view) => set({ mainView: view }),
+  setMainView: (view) => set({ mainView: view, settingsOpen: false }),
 
   settingsOpen: false,
   setSettingsOpen: (open) => set({ settingsOpen: open }),

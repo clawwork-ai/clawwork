@@ -11,9 +11,10 @@
     "noTitle": "(\u65e0\u6807\u9898)"
   },
   "leftNav": {
-    "searchTasks": "\u641c\u7d22\u4efb\u52a1\u2026",
-    "emptyHint": "\u70b9\u51fb\u300c\u65b0\u4efb\u52a1\u300d\u5f00\u59cb",
-    "appSettings": "\u5e94\u7528\u8bbe\u7f6e"
+    "searchTasks": "搜索任务…",
+    "emptyHint": "点击「新任务」开始",
+    "appSettings": "应用设置",
+    "archivedChats": "归档对话"
   },
   "mainArea": {
     "welcomeSubtitle": "AI-powered task execution",
@@ -84,6 +85,9 @@
   "filePreview": {
     "goToSource": "\u8df3\u8f6c\u5230\u6e90\u6d88\u606f",
     "cannotPreview": "\u65e0\u6cd5\u9884\u89c8\u6b64\u6587\u4ef6\u7c7b\u578b"
+  },
+  "archived": {
+    "empty": "暂无归档对话"
   },
   "errors": {
     "requestFailed": "\u8bf7\u6c42\u51fa\u9519"

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, type MouseEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Plus, Search, FolderOpen, Settings } from 'lucide-react'
+import { Plus, Search, FolderOpen, Settings, Archive } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useTaskStore } from '@/stores/taskStore'
 import { useUiStore } from '@/stores/uiStore'
@@ -151,23 +151,38 @@ export default function LeftNav() {
       </div>
 
       <div className="flex-shrink-0 px-4 py-3 border-t border-[var(--border)] space-y-1">
-        <ConnectionStatus gatewayStatus={gwStatus} />
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              onClick={() => setSettingsOpen(!settingsOpen)}
-              className={cn(
-                'titlebar-no-drag w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors',
-                settingsOpen
-                  ? 'bg-[var(--accent-dim)] text-[var(--text-primary)]'
-                  : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]',
-              )}
-            >
-              <Settings size={16} className="opacity-60" /> {t('common.settings')}
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="right">{t('leftNav.appSettings')}</TooltipContent>
-        </Tooltip>
+        <button
+          onClick={() => setMainView('archived')}
+          className={cn(
+            'titlebar-no-drag w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors',
+            mainView === 'archived'
+              ? 'bg-[var(--accent-dim)] text-[var(--text-primary)]'
+              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]',
+          )}
+        >
+          <Archive size={16} className="opacity-60" /> {t('leftNav.archivedChats')}
+        </button>
+        <div className="flex items-center">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => setSettingsOpen(!settingsOpen)}
+                className={cn(
+                  'titlebar-no-drag flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors',
+                  settingsOpen
+                    ? 'bg-[var(--accent-dim)] text-[var(--text-primary)]'
+                    : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]',
+                )}
+              >
+                <Settings size={16} className="opacity-60" /> {t('common.settings')}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">{t('leftNav.appSettings')}</TooltipContent>
+          </Tooltip>
+          <div className="ml-auto">
+            <ConnectionStatus gatewayStatus={gwStatus} />
+          </div>
+        </div>
       </div>
 
       <DropdownMenu open={isOpen} onOpenChange={(open) => { if (!open) closeMenu() }}>

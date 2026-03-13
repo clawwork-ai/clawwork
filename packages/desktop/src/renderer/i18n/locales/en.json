@@ -13,7 +13,8 @@
   "leftNav": {
     "searchTasks": "Search tasks\u2026",
     "emptyHint": "Click \"New Task\" to start",
-    "appSettings": "App Settings"
+    "appSettings": "App Settings",
+    "archivedChats": "Archived Chats"
   },
   "mainArea": {
     "welcomeSubtitle": "AI-powered task execution",
@@ -84,6 +85,9 @@
   "filePreview": {
     "goToSource": "Go to source message",
     "cannotPreview": "Cannot preview this file type"
+  },
+  "archived": {
+    "empty": "No archived chats"
   },
   "errors": {
     "requestFailed": "Request failed"
