@@ -26,7 +26,7 @@ A desktop client for [OpenClaw](https://github.com/openclaw/openclaw) — three-
 pnpm install
 
 # Start in development mode
-pnpm dev
+pnpm --filter @clawwork/desktop dev
 ```
 
 Configure the Gateway address and token in **Settings** (bottom-left gear icon), or set the environment variable:
@@ -39,13 +39,16 @@ OPENCLAW_GATEWAY_TOKEN=<your-token> pnpm dev
 
 ```bash
 # macOS (arm64)
-pnpm --filter @clawwork/desktop build:dmg
+pnpm --filter @clawwork/desktop build:mac:arm64
 
 # macOS (x64)
-pnpm --filter @clawwork/desktop build:dmg:x64
+pnpm --filter @clawwork/desktop build:mac:x64
 
 # macOS (Universal Binary)
-pnpm --filter @clawwork/desktop build:dmg:universal
+pnpm --filter @clawwork/desktop build:mac:universal
+
+# Windows
+pnpm --filter @clawwork/desktop build:win
 ```
 
 Output: `packages/desktop/dist/ClawWork-<version>-<arch>.dmg`
