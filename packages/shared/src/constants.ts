@@ -25,6 +25,18 @@ export function parseTaskIdFromSessionKey(sessionKey: string): string | null {
   return legacyMatch ? legacyMatch[1] : null;
 }
 
+/**
+ * Merge streaming chat text from Gateway.
+ * Handles cumulative snapshots, duplicate frames, and true incremental chunks.
+ */
+export function mergeGatewayStreamText(previous: string, incoming: string): string {
+  if (!incoming) return previous;
+  if (incoming === previous) return previous;
+  if (incoming.startsWith(previous)) return incoming;
+  if (previous.startsWith(incoming)) return previous;
+  return previous + incoming;
+}
+
 /** Check if a session key belongs to ClawWork */
 export function isClawWorkSession(sessionKey: string): boolean {
   return sessionKey.startsWith(SESSION_KEY_PREFIX);

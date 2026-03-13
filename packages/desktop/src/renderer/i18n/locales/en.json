@@ -88,7 +88,7 @@
     "describeTask": "Describe your task\u2026",
     "offlineReadOnly": "Offline \u2014 read-only",
     "createTaskFirst": "Create a task first\u2026",
-    "poweredBy": "Powered by OpenClaw \u00b7 Task files auto-archived via Git",
+    "poweredBy": "AI can make mistakes. Check important info.",
     "offlineHint": "Offline \u2014 browse past tasks and files"
   },
   "dialog": {

@@ -69,15 +69,18 @@ export function useGatewayEventDispatcher(): void {
       }
 
       const store = useMessageStore.getState();
+      const text = extractText(payload);
 
       if (state === 'delta') {
-        const text = extractText(payload);
         if (text) {
           store.setProcessing(taskId, false);
           store.appendStreamDelta(taskId, text);
         }
       } else if (state === 'final') {
         store.setProcessing(taskId, false);
+        if (text) {
+          store.appendStreamDelta(taskId, text);
+        }
         store.finalizeStream(taskId);
         autoTitleIfNeeded(taskId);
       } else if (state === 'error' || state === 'aborted') {
@@ -175,5 +178,4 @@ function autoTitleIfNeeded(taskId: string): void {
     }
   }
 }
-
 

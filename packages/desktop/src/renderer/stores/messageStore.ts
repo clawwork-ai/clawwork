@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { mergeGatewayStreamText } from '@clawwork/shared';
 import type { Message, MessageRole } from '@clawwork/shared';
 
 /** Stable empty array — avoids creating new references on every selector call */
@@ -74,7 +75,7 @@ export const useMessageStore = create<MessageState>((set, get) => ({
     set((s) => ({
       streamingByTask: {
         ...s.streamingByTask,
-        [taskId]: (s.streamingByTask[taskId] ?? '') + delta,
+        [taskId]: mergeGatewayStreamText(s.streamingByTask[taskId] ?? '', delta),
       },
     })),
 
