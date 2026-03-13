@@ -111,7 +111,7 @@ export default function ChatInput() {
     setProcessing(activeTask.id, true);
 
     if (!activeTask.title) {
-      const titleSource = content || (images.length ? `[${t('chatInput.image', '图片')}]` : '');
+      const titleSource = content || (images.length ? `[${t('chatInput.image')}]` : '');
       const title = titleSource.slice(0, 30).replace(/\n/g, ' ').trim();
       updateTaskTitle(activeTask.id, title + (titleSource.length > 30 ? '\u2026' : ''));
     }
@@ -129,7 +129,7 @@ export default function ChatInput() {
     } catch (err) {
       setProcessing(activeTask.id, false);
       const msg = err instanceof Error ? err.message : String(err);
-      addMessage(activeTask.id, 'system', `\u53D1\u9001\u5931\u8D25: ${msg}`);
+      addMessage(activeTask.id, 'system', `${t('errors.sendFailed')}: ${msg}`);
       toast.error('Failed to send message', { description: msg });
     }
   }, [activeTask, addMessage, setProcessing, updateTaskTitle, isOffline, pendingImages, t]);

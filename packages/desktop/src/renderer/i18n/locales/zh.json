@@ -90,14 +90,16 @@
     "empty": "暂无归档对话"
   },
   "errors": {
-    "requestFailed": "\u8bf7\u6c42\u51fa\u9519"
+    "requestFailed": "\u8bf7\u6c42\u51fa\u9519",
+    "sendFailed": "\u53d1\u9001\u5931\u8d25"
   },
   "chatInput": {
     "describeTask": "\u63cf\u8ff0\u4f60\u7684\u4efb\u52a1\u2026",
     "offlineReadOnly": "\u79bb\u7ebf\u6a21\u5f0f \u2014 \u53ea\u8bfb",
     "createTaskFirst": "\u8bf7\u5148\u521b\u5efa\u4e00\u4e2a\u4efb\u52a1\u2026",
     "poweredBy": "\u7531 OpenClaw \u9a71\u52a8 \u00b7 \u4efb\u52a1\u6587\u4ef6\u81ea\u52a8 Git \u5f52\u6863",
-    "offlineHint": "\u79bb\u7ebf\u6a21\u5f0f \u2014 \u53ef\u6d4f\u89c8\u5386\u53f2\u4efb\u52a1\u548c\u6587\u4ef6"
+    "offlineHint": "\u79bb\u7ebf\u6a21\u5f0f \u2014 \u53ef\u6d4f\u89c8\u5386\u53f2\u4efb\u52a1\u548c\u6587\u4ef6",
+    "image": "\u56fe\u7247"
   },
   "chatMessage": {
     "copyMessage": "\u590d\u5236\u6d88\u606f",

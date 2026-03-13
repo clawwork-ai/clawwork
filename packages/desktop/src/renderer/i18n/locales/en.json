@@ -90,14 +90,16 @@
     "empty": "No archived chats"
   },
   "errors": {
-    "requestFailed": "Request failed"
+    "requestFailed": "Request failed",
+    "sendFailed": "Send failed"
   },
   "chatInput": {
     "describeTask": "Describe your task\u2026",
     "offlineReadOnly": "Offline \u2014 read-only",
     "createTaskFirst": "Create a task first\u2026",
     "poweredBy": "AI can make mistakes. Check important info.",
-    "offlineHint": "Offline \u2014 browse past tasks and files"
+    "offlineHint": "Offline \u2014 browse past tasks and files",
+    "image": "Image"
   },
   "chatMessage": {
     "copyMessage": "Copy message",
