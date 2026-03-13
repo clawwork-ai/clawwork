@@ -16,6 +16,8 @@ import ThinkingIndicator from '@/components/ThinkingIndicator'
 import ChatInput from '@/components/ChatInput'
 import FileBrowser from '../FileBrowser'
 
+const STICK_TO_BOTTOM_THRESHOLD_PX = 60
+
 interface MainAreaProps {
   onTogglePanel: () => void
 }
@@ -110,9 +112,8 @@ function ChatContent() {
   const handleScroll = useCallback(() => {
     const el = viewportRef.current
     if (!el) return
-    const threshold = 60
     stickToBottom.current =
-      el.scrollHeight - el.scrollTop - el.clientHeight < threshold
+      el.scrollHeight - el.scrollTop - el.clientHeight < STICK_TO_BOTTOM_THRESHOLD_PX
   }, [])
 
   useEffect(() => {
