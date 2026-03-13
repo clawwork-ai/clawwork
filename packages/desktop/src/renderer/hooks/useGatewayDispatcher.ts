@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { parseTaskIdFromSessionKey } from '@clawwork/shared';
+import type { ToolCall, ToolCallStatus } from '@clawwork/shared';
 import { toast } from 'sonner';
 import i18n from '../i18n';
 import { useMessageStore } from '../stores/messageStore';
@@ -11,6 +12,10 @@ interface ChatContentBlock {
   type: string;
   text?: string;
   thinking?: string;
+  // toolCall content blocks from Gateway
+  id?: string;
+  name?: string;
+  arguments?: Record<string, unknown>;
 }
 
 interface ChatMessage {
@@ -27,16 +32,22 @@ interface ChatEventPayload {
   text?: string;
 }
 
+interface AgentToolData {
+  phase?: string;        // "update" = running, "result" = done, "error" = error
+  name?: string;         // tool name, e.g. "exec"
+  toolCallId?: string;   // e.g. "call_9GV1FoNq..."
+  meta?: string;         // result description (present on "result" phase)
+  isError?: boolean;     // true if tool errored
+  args?: string;         // tool arguments (sometimes present)
+}
+
 interface AgentToolEvent {
   sessionKey: string;
   runId?: string;
   stream?: string;
-  tool?: {
-    name: string;
-    status: 'running' | 'done' | 'error';
-    args?: string;
-    result?: string;
-  };
+  seq?: number;
+  ts?: number;
+  data?: AgentToolData;
 }
 
 /**
@@ -76,10 +87,20 @@ export function useGatewayEventDispatcher(): void {
           store.setProcessing(taskId, false);
           store.appendStreamDelta(taskId, text);
         }
+        // Also process toolCall blocks from delta content
+        const toolCalls = extractToolCalls(payload);
+        for (const tc of toolCalls) {
+          store.upsertToolCall(taskId, tc);
+        }
       } else if (state === 'final') {
         store.setProcessing(taskId, false);
         if (text) {
           store.appendStreamDelta(taskId, text);
+        }
+        // Extract and attach any toolCall blocks before finalizing
+        const toolCalls = extractToolCalls(payload);
+        for (const tc of toolCalls) {
+          store.upsertToolCall(taskId, tc);
         }
         store.finalizeStream(taskId);
         autoTitleIfNeeded(taskId);
@@ -94,18 +115,46 @@ export function useGatewayEventDispatcher(): void {
     }
 
     function handleAgentEvent(payload: AgentToolEvent): void {
-      const { sessionKey, stream, tool } = payload;
-      if (stream !== 'tool' || !tool || !sessionKey) return;
+      const { sessionKey, stream, data } = payload;
+      if (stream !== 'tool' || !data || !sessionKey) return;
 
       const taskId = parseTaskIdFromSessionKey(sessionKey);
       if (!taskId) return;
+
+      if (!data.name || !data.toolCallId) return;
 
       if (taskId !== activeTaskIdRef.current) {
         useUiStore.getState().markUnread(taskId);
       }
 
-      const toolText = formatToolEvent(tool);
-      useMessageStore.getState().addMessage(taskId, 'system', toolText);
+      // Map Gateway phase to our ToolCallStatus
+      let status: ToolCallStatus = 'running';
+      if (data.phase === 'result') status = data.isError ? 'error' : 'done';
+      else if (data.phase === 'error') status = 'error';
+
+      const tc: ToolCall = {
+        id: data.toolCallId,
+        name: data.name,
+        status,
+        args: parseToolArgs(data.args),
+        result: data.meta,
+        startedAt: data.phase === 'update' ? new Date().toISOString() : '',
+        completedAt: status !== 'running' ? new Date().toISOString() : undefined,
+      };
+
+      const store = useMessageStore.getState();
+      // Preserve startedAt from existing entry if we're updating
+      const existingMsgs = store.messagesByTask[taskId] ?? [];
+      for (let i = existingMsgs.length - 1; i >= 0; i--) {
+        const existing = existingMsgs[i].toolCalls.find((t) => t.id === tc.id);
+        if (existing) {
+          tc.startedAt = existing.startedAt;
+          break;
+        }
+      }
+      if (!tc.startedAt) tc.startedAt = new Date().toISOString();
+
+      store.upsertToolCall(taskId, tc);
     }
 
     const removeGatewayEvent = window.clawwork.onGatewayEvent(handler);
@@ -159,9 +208,32 @@ function extractText(payload: ChatEventPayload): string {
   return payload.text ?? '';
 }
 
-function formatToolEvent(tool: { name: string; status: string; args?: string; result?: string }): string {
-  const prefix = tool.status === 'running' ? '🔧' : tool.status === 'done' ? '✅' : '❌';
-  return `${prefix} \`${tool.name}\` — ${tool.status}`;
+/** Extract toolCall blocks from a chat event's content array into ToolCall objects */
+function extractToolCalls(payload: ChatEventPayload): ToolCall[] {
+  const blocks = payload.message?.content ?? payload.content;
+  if (!blocks) return [];
+  const result: ToolCall[] = [];
+  for (const b of blocks) {
+    if (b.type === 'toolCall' && b.id && b.name) {
+      result.push({
+        id: b.id,
+        name: b.name,
+        status: 'running',
+        args: typeof b.arguments === 'object' ? b.arguments as Record<string, unknown> : parseToolArgs(typeof b.arguments === 'string' ? b.arguments : undefined),
+        startedAt: new Date().toISOString(),
+      });
+    }
+  }
+  return result;
+}
+
+function parseToolArgs(raw: string | undefined): Record<string, unknown> | undefined {
+  if (!raw) return undefined;
+  try {
+    return JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    return { raw };
+  }
 }
 
 function autoTitleIfNeeded(taskId: string): void {

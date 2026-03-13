@@ -1,12 +1,11 @@
 import { useEffect, useRef } from 'react';
-import Markdown from 'react-markdown';
-import rehypeHighlight from 'rehype-highlight';
 import { motion } from 'framer-motion';
 import type { Message } from '@clawwork/shared';
 import { Bot, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion as motionPresets } from '@/styles/design-tokens';
 import ToolCallCard from './ToolCallCard';
+import MarkdownContent from './MarkdownContent';
 
 interface ChatMessageProps {
   message: Message;
@@ -98,28 +97,7 @@ export default function ChatMessage({ message, highlighted, onHighlightDone, onI
             {isUser ? (
               <p className="whitespace-pre-wrap">{message.content}</p>
             ) : (
-              <div className="prose-chat">
-                <Markdown
-                  rehypePlugins={[rehypeHighlight]}
-                  components={{
-                    img: ({ src, alt }) => {
-                      const actualSrc = src?.startsWith('clawwork-media://')
-                        ? `file://${src.replace('clawwork-media://', '')}`
-                        : src;
-                      return (
-                        <img
-                          src={actualSrc}
-                          alt={alt ?? ''}
-                          className="max-w-full max-h-80 rounded-lg mt-2 cursor-pointer"
-                          onClick={() => actualSrc && onImageClick?.(actualSrc)}
-                        />
-                      );
-                    },
-                  }}
-                >
-                  {message.content}
-                </Markdown>
-              </div>
+              <MarkdownContent content={message.content} onImageClick={onImageClick} showMessageCopy />
             )}
           </div>
         )}

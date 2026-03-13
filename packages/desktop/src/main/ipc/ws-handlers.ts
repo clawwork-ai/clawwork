@@ -18,13 +18,24 @@ interface SessionsListPayload {
 
 interface ChatHistoryMessage {
   role: string;
-  content: { type: string; text?: string; thinking?: string }[];
+  content: { type: string; text?: string; thinking?: string; id?: string; name?: string; arguments?: unknown; result?: unknown }[];
   timestamp?: number;
 }
 
 interface ChatHistoryPayload {
   messages?: ChatHistoryMessage[];
   sessionId?: string;
+}
+
+/** Parsed tool call for transport to renderer */
+interface ParsedToolCall {
+  id: string;
+  name: string;
+  status: 'running' | 'done' | 'error';
+  args?: Record<string, unknown>;
+  result?: string;
+  startedAt: string;
+  completedAt?: string;
 }
 
 export function registerWsHandlers(): void {
@@ -97,7 +108,7 @@ export function registerWsHandlers(): void {
         sessionKey: string;
         title: string;
         updatedAt: string;
-        messages: { role: string; content: string; timestamp: string }[];
+        messages: { role: string; content: string; timestamp: string; toolCalls: ParsedToolCall[] }[];
       }[] = [];
 
       for (const s of ours) {
@@ -105,16 +116,60 @@ export function registerWsHandlers(): void {
         if (!taskId) continue;
 
         const historyRaw = await gw.getChatHistory(s.key, 200) as unknown as ChatHistoryPayload;
-        const msgs = (historyRaw.messages ?? []).map((m) => ({
-          role: m.role,
-          content: (m.content ?? [])
-            .filter((b) => b.type === 'text' && b.text)
-            .map((b) => b.text!)
-            .join(''),
-          timestamp: m.timestamp
-            ? new Date(m.timestamp).toISOString()
-            : new Date().toISOString(),
-        })).filter((m) => m.content);
+        const rawMsgs = historyRaw.messages ?? [];
+
+        // Build a map of toolCall id → toolResult for pairing
+        const toolResultMap = new Map<string, string>();
+        for (const m of rawMsgs) {
+          if (m.role === 'toolResult') {
+            for (const b of m.content ?? []) {
+              if (b.type === 'toolResult' && b.id && b.result !== undefined) {
+                toolResultMap.set(b.id, typeof b.result === 'string' ? b.result : JSON.stringify(b.result));
+              }
+            }
+          }
+        }
+
+        const msgs = rawMsgs
+          .filter((m) => m.role === 'user' || m.role === 'assistant')
+          .map((m) => {
+            const textContent = (m.content ?? [])
+              .filter((b) => b.type === 'text' && b.text)
+              .map((b) => b.text!)
+              .join('');
+
+            const toolCalls: ParsedToolCall[] = (m.content ?? [])
+              .filter((b) => b.type === 'toolCall' && b.id && b.name)
+              .map((b) => {
+                const tcId = b.id!;
+                const resultText = toolResultMap.get(tcId);
+                return {
+                  id: tcId,
+                  name: b.name!,
+                  status: (resultText !== undefined ? 'done' : 'running') as ParsedToolCall['status'],
+                  args: typeof b.arguments === 'object' && b.arguments !== null
+                    ? b.arguments as Record<string, unknown>
+                    : typeof b.arguments === 'string'
+                      ? safeJsonParse(b.arguments)
+                      : undefined,
+                  result: resultText,
+                  startedAt: m.timestamp ? new Date(m.timestamp).toISOString() : new Date().toISOString(),
+                  completedAt: resultText !== undefined
+                    ? (m.timestamp ? new Date(m.timestamp).toISOString() : new Date().toISOString())
+                    : undefined,
+                };
+              });
+
+            return {
+              role: m.role,
+              content: textContent,
+              timestamp: m.timestamp
+                ? new Date(m.timestamp).toISOString()
+                : new Date().toISOString(),
+              toolCalls,
+            };
+          })
+          .filter((m) => m.content || m.toolCalls.length > 0);
 
         discovered.push({
           taskId,
@@ -134,4 +189,12 @@ export function registerWsHandlers(): void {
       return { ok: false, error: msg };
     }
   });
+}
+
+function safeJsonParse(raw: string): Record<string, unknown> | undefined {
+  try {
+    return JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    return { raw };
+  }
 }

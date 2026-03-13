@@ -1,4 +1,4 @@
-import type { Message, MessageRole } from '@clawwork/shared';
+import type { Message, MessageRole, ToolCall } from '@clawwork/shared';
 import { useTaskStore } from '../stores/taskStore';
 import { useMessageStore } from '../stores/messageStore';
 
@@ -43,13 +43,26 @@ export async function syncFromGateway(): Promise<void> {
       if (d.messages.length === 0) continue;
       const existing = useMessageStore.getState().messagesByTask[d.taskId];
       if (existing && existing.length > 0) continue;
-      const msgs: Message[] = d.messages.map((m) => ({
+      const msgs: Message[] = d.messages.map((m: {
+        role: string;
+        content: string;
+        timestamp: string;
+        toolCalls?: { id: string; name: string; status: string; args?: Record<string, unknown>; result?: string; startedAt: string; completedAt?: string }[];
+      }) => ({
         id: crypto.randomUUID(),
         taskId: d.taskId,
         role: m.role as MessageRole,
         content: m.content,
         artifacts: [],
-        toolCalls: [],
+        toolCalls: (m.toolCalls ?? []).map((tc): ToolCall => ({
+          id: tc.id,
+          name: tc.name,
+          status: tc.status as ToolCall['status'],
+          args: tc.args,
+          result: tc.result,
+          startedAt: tc.startedAt,
+          completedAt: tc.completedAt,
+        })),
         timestamp: m.timestamp,
       }));
       useMessageStore.getState().bulkLoad(d.taskId, msgs);

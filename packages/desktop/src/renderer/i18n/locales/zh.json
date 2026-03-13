@@ -99,6 +99,11 @@
     "poweredBy": "\u7531 OpenClaw \u9a71\u52a8 \u00b7 \u4efb\u52a1\u6587\u4ef6\u81ea\u52a8 Git \u5f52\u6863",
     "offlineHint": "\u79bb\u7ebf\u6a21\u5f0f \u2014 \u53ef\u6d4f\u89c8\u5386\u53f2\u4efb\u52a1\u548c\u6587\u4ef6"
   },
+  "chatMessage": {
+    "copyMessage": "\u590d\u5236\u6d88\u606f",
+    "copyCode": "\u590d\u5236\u4ee3\u7801",
+    "copied": "\u5df2\u590d\u5236"
+  },
   "dialog": {
     "selectWorkspaceDir": "\u9009\u62e9\u5de5\u4f5c\u7a7a\u95f4\u76ee\u5f55"
   }

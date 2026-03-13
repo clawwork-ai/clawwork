@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { mergeGatewayStreamText } from '@clawwork/shared';
-import type { Message, MessageRole, MessageImageAttachment } from '@clawwork/shared';
+import type { Message, MessageRole, MessageImageAttachment, ToolCall } from '@clawwork/shared';
 
 /** Stable empty array — avoids creating new references on every selector call */
 const EMPTY_MESSAGES: Message[] = [];
@@ -16,6 +16,9 @@ interface MessageState {
   highlightedMessageId: string | null;
 
   addMessage: (taskId: string, role: MessageRole, content: string, imageAttachments?: MessageImageAttachment[]) => Message;
+  /** Insert or update a ToolCall on the latest assistant message for a task.
+   *  If no assistant message exists yet, one is created to host the tool call. */
+  upsertToolCall: (taskId: string, tc: ToolCall) => void;
   /** Bulk-load messages into store without persisting to DB */
   bulkLoad: (taskId: string, msgs: Message[]) => void;
   appendStreamDelta: (taskId: string, delta: string) => void;
@@ -63,6 +66,43 @@ export const useMessageStore = create<MessageState>((set, get) => ({
     }).catch(() => {});
     return msg;
   },
+
+  upsertToolCall: (taskId, tc) =>
+    set((s) => {
+      const msgs = s.messagesByTask[taskId] ?? [];
+      // Find the last assistant message to attach the tool call to
+      let targetIdx = -1;
+      for (let i = msgs.length - 1; i >= 0; i--) {
+        if (msgs[i].role === 'assistant') { targetIdx = i; break; }
+      }
+
+      const updatedMsgs = [...msgs];
+      if (targetIdx >= 0) {
+        const target = updatedMsgs[targetIdx];
+        const existingIdx = target.toolCalls.findIndex((t) => t.id === tc.id);
+        const nextToolCalls = [...target.toolCalls];
+        if (existingIdx >= 0) {
+          nextToolCalls[existingIdx] = tc;
+        } else {
+          nextToolCalls.push(tc);
+        }
+        updatedMsgs[targetIdx] = { ...target, toolCalls: nextToolCalls };
+      } else {
+        // No assistant message yet — create a placeholder to host tool calls
+        updatedMsgs.push({
+          id: generateId(),
+          taskId,
+          role: 'assistant',
+          content: '',
+          artifacts: [],
+          toolCalls: [tc],
+          timestamp: new Date().toISOString(),
+        });
+      }
+      return {
+        messagesByTask: { ...s.messagesByTask, [taskId]: updatedMsgs },
+      };
+    }),
 
   bulkLoad: (taskId, msgs) =>
     set((s) => ({

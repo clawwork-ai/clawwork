@@ -1,9 +1,8 @@
-import Markdown from 'react-markdown';
-import rehypeHighlight from 'rehype-highlight';
 import { motion } from 'framer-motion';
 import { Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion as motionPresets } from '@/styles/design-tokens';
+import MarkdownContent from './MarkdownContent';
 
 interface StreamingMessageProps {
   content: string;
@@ -25,12 +24,7 @@ export default function StreamingMessage({ content }: StreamingMessageProps) {
       </div>
       <div className="min-w-0 max-w-[80%]">
         <div className="leading-relaxed text-[var(--text-primary)]">
-          <div className="prose-chat">
-            <Markdown rehypePlugins={[rehypeHighlight]}>
-              {content}
-            </Markdown>
-          </div>
-          <span className="inline-block w-1.5 h-4 bg-[var(--accent)] animate-pulse ml-0.5 align-middle rounded-sm" />
+          <MarkdownContent content={content} showCursor />
         </div>
       </div>
     </motion.div>

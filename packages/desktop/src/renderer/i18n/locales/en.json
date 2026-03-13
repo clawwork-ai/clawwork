@@ -99,6 +99,11 @@
     "poweredBy": "AI can make mistakes. Check important info.",
     "offlineHint": "Offline \u2014 browse past tasks and files"
   },
+  "chatMessage": {
+    "copyMessage": "Copy message",
+    "copyCode": "Copy code",
+    "copied": "Copied"
+  },
   "dialog": {
     "selectWorkspaceDir": "Select Workspace Directory"
   }
