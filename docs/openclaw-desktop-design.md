@@ -609,13 +609,13 @@ Only visible in the conversation flow view (hidden in the file browser view). Ke
 
 #### 4.1 Experience Optimization
 
-- [ ] **T4-1** Theme system: dark / light theme toggle, CSS Variables + Tailwind v4
+- [x] **T4-1** Theme system: dark / light theme toggle, CSS Variables + Tailwind v4
   - ✅ Check: Theme can be toggled in Settings; all components follow the change
-- [ ] **T4-2** Global search: Task titles + filenames + message content full-text search (SQLite FTS5)
+- [x] **T4-2** Global search: Task titles + filenames + message content full-text search (SQLite FTS5)
   - ✅ Check: Search results are clickable and navigate to the corresponding Task or file
-- [ ] **T4-3** Settings page: OpenClaw Server address config + Workspace path config + theme toggle
+- [x] **T4-3** Settings page: OpenClaw Server address config + Workspace path config + theme toggle
   - ✅ Check: After changing the Server address, reconnection succeeds
-- [ ] **T4-4** Error handling + reconnection: WebSocket disconnect notification, reconnect animation, offline state display
+- [x] **T4-4** Error handling + reconnection: WebSocket disconnect notification, reconnect animation, offline state display
   - ✅ Check: Disconnect cable → shows disconnect notification → reconnects automatically after recovery
 
 #### 4.2 Packaging & Distribution

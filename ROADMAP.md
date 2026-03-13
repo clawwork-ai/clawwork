@@ -2,6 +2,10 @@
 
 ## Features
 
+- Display current model and Agent name for each Task (session)
+- Support GitHub Actions workflow for automated builds and release testing
+- Support e2e smoke tests
+- Update logo
 - Support i18n internationalization — English and Chinese first, with a language switcher in Settings; clean all Chinese text from source code files
 
 ## Bugs

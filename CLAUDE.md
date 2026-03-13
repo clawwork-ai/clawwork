@@ -297,7 +297,7 @@ Phase 4:
 
 ### Full Gateway Protocol Reference
 
-Detailed protocol documentation is stored in a local agent-memory file (`gateway-ws-protocol.md`), including: frame format, connection handshake, valid client ID/mode enums, RPC method list, event types, chat message structure, available Agent list.
+Detailed protocol documentation is stored at `~/.agents/memories/-Users-x-git-samzong-clawwork/gateway-ws-protocol.md`, including: frame format, connection handshake, valid client ID/mode enums, RPC method list, event types, chat message structure, available Agent list.
 
 ### Tailwind v4 `@layer` Specificity Pitfall
 
@@ -313,6 +313,18 @@ If you write unlayered global resets in `theme.css` (the file containing `@impor
 Then `pt-14`, `px-4`, `pb-3`, etc. — **all** padding/margin utilities — will be overridden to 0px, completely ineffective.
 
 **Fix:** Remove the reset. Tailwind v4 Preflight (`@layer base`) already includes `* { margin: 0; padding: 0; box-sizing: border-box }`. If you must write custom base styles, wrap them in `@layer base { ... }`.
+
+### Gateway Streaming Text is Cumulative Snapshots, Not Incremental Deltas
+
+Gateway `chat` event `state: 'delta'` frames may contain **cumulative snapshots rather than incremental chunks**. The same frame may also be sent repeatedly. If `messageStore.appendStreamDelta()` directly uses `+=` to concatenate, messages will display duplicated (e.g. "HelloHelloHello...").
+
+**Fix:** Use `mergeGatewayStreamText(previous, incoming)` for smart merging (implemented in `@clawwork/shared/constants.ts`). Merge logic:
+1. `incoming === previous` → ignore duplicate frame
+2. `incoming.startsWith(previous)` → cumulative snapshot, replace directly with incoming
+3. `previous.startsWith(incoming)` → old snapshot replay, ignore
+4. Otherwise → real incremental chunk, normal concatenation
+
+Also, `state: 'final'` frames may carry trailing text that must be processed with `appendStreamDelta()` before `finalizeStream()`, otherwise the trailing content is lost.
 
 ### Electron Auto-Screenshot Troubleshooting
 
