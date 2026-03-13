@@ -19,6 +19,8 @@ import logo from '@/assets/logo.png'
 
 const STICK_TO_BOTTOM_THRESHOLD_PX = 60
 
+const STICK_TO_BOTTOM_THRESHOLD_PX = 60
+
 interface MainAreaProps {
   onTogglePanel: () => void
 }
