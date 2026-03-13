@@ -4,8 +4,8 @@ import type { ClawWorkAPI } from './clawwork';
 
 function buildApi(): ClawWorkAPI {
   return {
-    sendMessage: (sessionKey: string, content: string) =>
-      ipcRenderer.invoke('ws:send-message', { sessionKey, content }),
+    sendMessage: (sessionKey: string, content: string, attachments?: { mimeType: string; fileName: string; content: string }[]) =>
+      ipcRenderer.invoke('ws:send-message', { sessionKey, content, attachments }),
     chatHistory: (sessionKey: string, limit?: number) =>
       ipcRenderer.invoke('ws:chat-history', { sessionKey, limit }),
     listSessions: () =>

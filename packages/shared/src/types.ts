@@ -31,6 +31,13 @@ export interface Task {
   artifactDir: string;
 }
 
+/** Image attachment stored with a user message for UI preview */
+export interface MessageImageAttachment {
+  fileName: string;
+  /** data URL (e.g. "data:image/png;base64,...") for rendering in <img> */
+  dataUrl: string;
+}
+
 export interface Message {
   id: string;
   taskId: string;
@@ -38,6 +45,8 @@ export interface Message {
   content: string;
   artifacts: Artifact[];
   toolCalls: ToolCall[];
+  /** Image attachments sent with user messages (for inline preview) */
+  imageAttachments?: MessageImageAttachment[];
   timestamp: string; // ISO 8601
 }
 
@@ -75,4 +84,15 @@ export interface ToolCall {
 export interface ProgressStep {
   label: string;
   status: 'pending' | 'in_progress' | 'completed';
+}
+
+// ------------------------------------------------------------
+// Chat Attachments (for Gateway chat.send)
+// ------------------------------------------------------------
+
+/** Image attachment sent via Gateway chat.send. Only image/* MIME types are supported. */
+export interface ChatAttachment {
+  mimeType: string;   // e.g. "image/png", "image/jpeg"
+  fileName: string;
+  content: string;    // base64-encoded (no data URL prefix)
 }

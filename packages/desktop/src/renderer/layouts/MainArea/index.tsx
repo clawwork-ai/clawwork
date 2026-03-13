@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { PanelRightOpen } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -14,6 +14,7 @@ import ChatMessage from '@/components/ChatMessage'
 import StreamingMessage from '@/components/StreamingMessage'
 import ThinkingIndicator from '@/components/ThinkingIndicator'
 import ChatInput from '@/components/ChatInput'
+import ImageLightbox from '@/components/ImageLightbox'
 import FileBrowser from '../FileBrowser'
 import logo from '@/assets/logo.png'
 
@@ -115,6 +116,8 @@ function ChatContent() {
   )
   const viewportRef = useRef<HTMLDivElement>(null)
   const stickToBottom = useRef(true)
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
+  const closeLightbox = useCallback(() => setLightboxSrc(null), [])
 
   const handleScroll = useCallback(() => {
     const el = viewportRef.current
@@ -141,6 +144,7 @@ function ChatContent() {
               message={msg}
               highlighted={msg.id === highlightedId}
               onHighlightDone={() => setHighlightedMessage(null)}
+              onImageClick={setLightboxSrc}
             />
           ))}
           {streamingContent && <StreamingMessage content={streamingContent} />}
@@ -150,6 +154,7 @@ function ChatContent() {
         </div>
       </ScrollArea>
       <ChatInput />
+      <ImageLightbox src={lightboxSrc} onClose={closeLightbox} />
     </>
   )
 }

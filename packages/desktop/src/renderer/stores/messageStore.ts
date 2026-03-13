@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { mergeGatewayStreamText } from '@clawwork/shared';
-import type { Message, MessageRole } from '@clawwork/shared';
+import type { Message, MessageRole, MessageImageAttachment } from '@clawwork/shared';
 
 /** Stable empty array — avoids creating new references on every selector call */
 const EMPTY_MESSAGES: Message[] = [];
@@ -15,7 +15,7 @@ interface MessageState {
   /** message ID to highlight (e.g. from file navigation) */
   highlightedMessageId: string | null;
 
-  addMessage: (taskId: string, role: MessageRole, content: string) => Message;
+  addMessage: (taskId: string, role: MessageRole, content: string, imageAttachments?: MessageImageAttachment[]) => Message;
   /** Bulk-load messages into store without persisting to DB */
   bulkLoad: (taskId: string, msgs: Message[]) => void;
   appendStreamDelta: (taskId: string, delta: string) => void;
@@ -37,7 +37,7 @@ export const useMessageStore = create<MessageState>((set, get) => ({
   processingTasks: new Set(),
   highlightedMessageId: null,
 
-  addMessage: (taskId, role, content) => {
+  addMessage: (taskId, role, content, imageAttachments?) => {
     const msg: Message = {
       id: generateId(),
       taskId,
@@ -45,6 +45,7 @@ export const useMessageStore = create<MessageState>((set, get) => ({
       content,
       artifacts: [],
       toolCalls: [],
+      imageAttachments: imageAttachments?.length ? imageAttachments : undefined,
       timestamp: new Date().toISOString(),
     };
     set((s) => ({

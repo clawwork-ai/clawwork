@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "description": "OpenClaw desktop client with structured task management",
   "scripts": {
+    "postinstall": "node scripts/ensure-electron.mjs",
     "dev": "pnpm --filter @clawwork/desktop dev",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",

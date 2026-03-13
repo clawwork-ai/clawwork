@@ -12,9 +12,10 @@ interface ChatMessageProps {
   message: Message;
   highlighted?: boolean;
   onHighlightDone?: () => void;
+  onImageClick?: (src: string) => void;
 }
 
-export default function ChatMessage({ message, highlighted, onHighlightDone }: ChatMessageProps) {
+export default function ChatMessage({ message, highlighted, onHighlightDone, onImageClick }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
   const ref = useRef<HTMLDivElement>(null);
@@ -35,6 +36,8 @@ export default function ChatMessage({ message, highlighted, onHighlightDone }: C
       </div>
     );
   }
+
+  const images = message.imageAttachments;
 
   return (
     <motion.div
@@ -62,41 +65,64 @@ export default function ChatMessage({ message, highlighted, onHighlightDone }: C
       </div>
 
       <div className={cn('min-w-0 max-w-[80%]', isUser && 'text-right')}>
-        <div
-          className={cn(
-            'inline-block leading-relaxed rounded-2xl px-4 py-3',
-            isUser
-              ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]'
-              : 'text-[var(--text-primary)]',
-          )}
-        >
-          {isUser ? (
-            <p className="whitespace-pre-wrap">{message.content}</p>
-          ) : (
-            <div className="prose-chat">
-              <Markdown
-                rehypePlugins={[rehypeHighlight]}
-                components={{
-                  img: ({ src, alt }) => {
-                    const actualSrc = src?.startsWith('clawwork-media://')
-                      ? `file://${src.replace('clawwork-media://', '')}`
-                      : src;
-                    return (
-                      <img
-                        src={actualSrc}
-                        alt={alt ?? ''}
-                        className="max-w-full max-h-80 rounded-lg mt-2 cursor-pointer"
-                        onClick={() => actualSrc && window.open(actualSrc)}
-                      />
-                    );
-                  },
-                }}
-              >
-                {message.content}
-              </Markdown>
-            </div>
-          )}
-        </div>
+        {/* Image thumbnails for user messages */}
+        {isUser && images?.length ? (
+          <div className={cn('flex gap-2 mb-2 flex-wrap', isUser && 'justify-end')}>
+            {images.map((img, i) => (
+              <img
+                key={`${img.fileName}-${i}`}
+                src={img.dataUrl}
+                alt={img.fileName}
+                className={cn(
+                  'rounded-xl object-cover cursor-pointer border border-[var(--border-subtle)]',
+                  'hover:opacity-90 transition-opacity',
+                  images.length === 1 ? 'max-w-[280px] max-h-[200px]' : 'w-20 h-20',
+                )}
+                onClick={() => onImageClick?.(img.dataUrl)}
+              />
+            ))}
+          </div>
+        ) : null}
+
+        {/* Text content */}
+        {(message.content || !images?.length) && (
+          <div
+            className={cn(
+              'inline-block leading-relaxed rounded-2xl px-4 py-3',
+              isUser
+                ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]'
+                : 'text-[var(--text-primary)]',
+              isUser && !message.content && 'hidden',
+            )}
+          >
+            {isUser ? (
+              <p className="whitespace-pre-wrap">{message.content}</p>
+            ) : (
+              <div className="prose-chat">
+                <Markdown
+                  rehypePlugins={[rehypeHighlight]}
+                  components={{
+                    img: ({ src, alt }) => {
+                      const actualSrc = src?.startsWith('clawwork-media://')
+                        ? `file://${src.replace('clawwork-media://', '')}`
+                        : src;
+                      return (
+                        <img
+                          src={actualSrc}
+                          alt={alt ?? ''}
+                          className="max-w-full max-h-80 rounded-lg mt-2 cursor-pointer"
+                          onClick={() => actualSrc && onImageClick?.(actualSrc)}
+                        />
+                      );
+                    },
+                  }}
+                >
+                  {message.content}
+                </Markdown>
+              </div>
+            )}
+          </div>
+        )}
         {message.toolCalls.length > 0 && (
           <div className="mt-2 space-y-1">
             {message.toolCalls.map((tc) => (

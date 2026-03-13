@@ -13,6 +13,7 @@ import type {
   GatewayConnectParams,
   GatewayClientConfig,
   GatewayAuth,
+  ChatAttachment,
 } from '@clawwork/shared';
 import type { BrowserWindow } from 'electron';
 import { sendToWindow } from './window-utils.js';
@@ -188,13 +189,21 @@ export class GatewayClient {
     });
   }
 
-  async sendChatMessage(sessionKey: string, message: string): Promise<Record<string, unknown>> {
-    return this.sendReq('chat.send', {
+  async sendChatMessage(
+    sessionKey: string,
+    message: string,
+    attachments?: ChatAttachment[],
+  ): Promise<Record<string, unknown>> {
+    const params: Record<string, unknown> = {
       sessionKey,
       message,
       idempotencyKey: randomUUID(),
       deliver: false,
-    });
+    };
+    if (attachments?.length) {
+      params.attachments = attachments;
+    }
+    return this.sendReq('chat.send', params);
   }
 
   async abortChat(sessionKey: string): Promise<Record<string, unknown>> {

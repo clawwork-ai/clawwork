@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron';
 import { getGatewayClient } from '../ws/index.js';
 import { isClawWorkSession, parseTaskIdFromSessionKey } from '@clawwork/shared';
+import type { ChatAttachment } from '@clawwork/shared';
 
 interface GatewaySessionRow {
   key: string;
@@ -30,13 +31,14 @@ export function registerWsHandlers(): void {
   ipcMain.handle('ws:send-message', async (_event, payload: {
     sessionKey: string;
     content: string;
+    attachments?: ChatAttachment[];
   }) => {
     const gw = getGatewayClient();
     if (!gw?.isConnected) {
       return { ok: false, error: 'gateway not connected' };
     }
     try {
-      await gw.sendChatMessage(payload.sessionKey, payload.content);
+      await gw.sendChatMessage(payload.sessionKey, payload.content, payload.attachments);
       return { ok: true };
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'unknown error';

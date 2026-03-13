@@ -79,8 +79,14 @@ interface ListResult<T> {
   error?: string;
 }
 
+interface ChatAttachment {
+  mimeType: string;
+  fileName: string;
+  content: string; // base64
+}
+
 export interface ClawWorkAPI {
-  sendMessage: (sessionKey: string, content: string) => Promise<IpcResult>;
+  sendMessage: (sessionKey: string, content: string, attachments?: ChatAttachment[]) => Promise<IpcResult>;
   chatHistory: (sessionKey: string, limit?: number) => Promise<IpcResult>;
   listSessions: () => Promise<IpcResult>;
   gatewayStatus: () => Promise<ConnectionStatus>;
