@@ -103,9 +103,9 @@ export default function ChatInput() {
   const handleThinkingChange = useCallback((level: ThinkingLevel) => {
     if (!activeTask) return;
     const { updateTaskMetadata } = useTaskStore.getState();
-    const value = level === 'off' ? null : level;
-    updateTaskMetadata(activeTask.id, { thinkingLevel: value ?? undefined });
-    window.clawwork.patchSession(activeTask.gatewayId, activeTask.sessionKey, { thinkingLevel: value }).catch(() => {
+    updateTaskMetadata(activeTask.id, { thinkingLevel: level === 'off' ? undefined : level });
+    // OpenClaw accepts "off" | "low" | "medium" | "high" as thinkingLevel string
+    window.clawwork.patchSession(activeTask.gatewayId, activeTask.sessionKey, { thinkingLevel: level }).catch(() => {
       toast.error('Failed to update thinking level');
     });
   }, [activeTask]);
