@@ -94,7 +94,8 @@ export default function ChatInput() {
     if (!activeTask) return;
     const { updateTaskMetadata } = useTaskStore.getState();
     updateTaskMetadata(activeTask.id, { model: modelId });
-    window.clawwork.patchSession(activeTask.gatewayId, activeTask.sessionKey, { model: modelId }).catch(() => {
+    // OpenClaw sessions.patch uses `modelOverride` (provider/model format), not `model`
+    window.clawwork.patchSession(activeTask.gatewayId, activeTask.sessionKey, { modelOverride: modelId }).catch(() => {
       toast.error('Failed to update model');
     });
   }, [activeTask]);
