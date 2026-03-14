@@ -1,0 +1,61 @@
+name: Update Homebrew Tap
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Git tag to publish to Homebrew tap (for example: v0.0.2)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  update-homebrew-tap:
+    if: ${{ github.event_name != 'release' || github.event.release.prerelease != true }}
+    runs-on: ubuntu-latest
+    env:
+      CLAWWORK_REPO: clawwork-ai/clawwork
+      TAP_DIR: homebrew-clawwork
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.event.release.tag_name }}
+
+    steps:
+      - name: Checkout source repository
+        uses: actions/checkout@v4
+
+      - name: Checkout tap repository
+        uses: actions/checkout@v4
+        with:
+          repository: clawwork-ai/homebrew-clawwork
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-clawwork
+
+      - name: Update clawwork cask
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CLAWWORK_REPO: ${{ env.CLAWWORK_REPO }}
+          TAP_DIR: ${{ env.TAP_DIR }}
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+        run: |
+          bash scripts/update-homebrew-tap.sh
+
+      - name: Configure git identity
+        working-directory: homebrew-clawwork
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit and push tap update
+        working-directory: homebrew-clawwork
+        run: |
+          if git diff --quiet; then
+            echo "No Homebrew tap changes to commit."
+            exit 0
+          fi
+
+          git add Casks/clawwork.rb
+          git commit -m "chore: update clawwork cask for ${RELEASE_TAG}"
+          git push origin HEAD:main

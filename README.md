@@ -35,6 +35,13 @@ Configure the Gateway address and token in **Settings** (bottom-left gear icon),
 OPENCLAW_GATEWAY_TOKEN=<your-token> pnpm dev
 ```
 
+## Install with Homebrew
+
+```bash
+brew tap clawwork-ai/clawwork
+brew install --cask clawwork
+```
+
 ## Build
 
 ```bash
