@@ -179,6 +179,11 @@ export function useGatewayEventDispatcher(): void {
         setGatewayStatusByGateway(gwId, status);
         if (info.connected) {
           connectedGatewaysRef.current.add(gwId);
+          window.clawwork.listModels(gwId).then((res) => {
+            if (res.ok && (res as any).result) {
+              useUiStore.getState().setModelCatalog(gwId, normalizeModelCatalog((res as any).result));
+            }
+          }).catch(() => {});
         }
       }
       // If any gateway connected and not yet synced, sync
