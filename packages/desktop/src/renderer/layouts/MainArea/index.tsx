@@ -20,6 +20,7 @@ import ThinkingIndicator from '@/components/ThinkingIndicator'
 import ChatInput from '@/components/ChatInput'
 import ImageLightbox from '@/components/ImageLightbox'
 import FileBrowser from '../FileBrowser'
+import SessionRuntimeControls from '@/components/SessionRuntimeControls'
 import logo from '@/assets/logo.png'
 
 const STICK_TO_BOTTOM_THRESHOLD_PX = 60
@@ -148,6 +149,7 @@ function ChatHeader({ onTogglePanel }: { onTogglePanel: () => void }) {
                 <TooltipContent>{gwInfo.name}</TooltipContent>
               </Tooltip>
             )}
+            <SessionRuntimeControls />
           </>
         ) : (
           <h2 className="font-medium text-[var(--text-muted)]">ClawWork</h2>
