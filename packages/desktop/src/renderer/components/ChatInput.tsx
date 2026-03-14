@@ -15,6 +15,8 @@ import {
 import { useTaskStore } from '../stores/taskStore';
 import { useMessageStore } from '../stores/messageStore';
 import { useUiStore } from '../stores/uiStore';
+import SlashCommandMenu from './SlashCommandMenu';
+import { filterSlashCommands, parseSlashQuery, type SlashCommand } from '@/lib/slash-commands';
 
 interface PendingImage {
   file: File;
@@ -70,6 +72,42 @@ export default function ChatInput() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
 
+  // ── Slash command autocomplete state ─────────────────────────────────────────
+  const [slashMenuVisible, setSlashMenuVisible] = useState(false);
+  const [slashQuery, setSlashQuery] = useState('');
+  const [slashIndex, setSlashIndex] = useState(0);
+  const slashCommands = filterSlashCommands(slashQuery);
+
+  /** Evaluate the current textarea value and cursor position to determine
+   *  whether to show the slash command menu. */
+  const updateSlashMenu = useCallback(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const result = parseSlashQuery(ta.value, ta.selectionStart ?? 0);
+    if (result.active) {
+      setSlashQuery(result.query);
+      setSlashIndex(0);
+      setSlashMenuVisible(true);
+    } else {
+      setSlashMenuVisible(false);
+    }
+  }, []);
+
+  /** Insert the selected command name into the textarea. */
+  const commitSlashCommand = useCallback((cmd: SlashCommand) => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const newValue = `/${cmd.name} `;
+    ta.value = newValue;
+    ta.style.height = 'auto';
+    ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`;
+    ta.setSelectionRange(newValue.length, newValue.length);
+    ta.focus();
+    setSlashMenuVisible(false);
+    setSlashQuery('');
+    setSlashIndex(0);
+  }, []);
+
   const activeTask = useTaskStore((s) =>
     s.tasks.find((t) => t.id === s.activeTaskId),
   );
@@ -94,7 +132,6 @@ export default function ChatInput() {
     if (!activeTask) return;
     const { updateTaskMetadata } = useTaskStore.getState();
     updateTaskMetadata(activeTask.id, { model: modelId });
-    // OpenClaw sessions.patch uses `modelOverride` (provider/model format), not `model`
     window.clawwork.patchSession(activeTask.gatewayId, activeTask.sessionKey, { modelOverride: modelId }).catch(() => {
       toast.error('Failed to update model');
     });
@@ -104,7 +141,6 @@ export default function ChatInput() {
     if (!activeTask) return;
     const { updateTaskMetadata } = useTaskStore.getState();
     updateTaskMetadata(activeTask.id, { thinkingLevel: level === 'off' ? undefined : level });
-    // OpenClaw accepts "off" | "low" | "medium" | "high" as thinkingLevel string
     window.clawwork.patchSession(activeTask.gatewayId, activeTask.sessionKey, { thinkingLevel: level }).catch(() => {
       toast.error('Failed to update thinking level');
     });
@@ -148,7 +184,6 @@ export default function ChatInput() {
     const images = [...pendingImages];
     setPendingImages([]);
 
-    // Store preview data URLs in message for chat display
     const msgImages: MessageImageAttachment[] | undefined = images.length
       ? images.map((img) => ({ fileName: img.file.name, dataUrl: img.previewUrl }))
       : undefined;
@@ -163,7 +198,6 @@ export default function ChatInput() {
     }
 
     try {
-      // Read base64 only at send time
       const attachments = images.length
         ? await Promise.all(images.map(async (img) => ({
             mimeType: img.file.type || 'image/png',
@@ -184,16 +218,42 @@ export default function ChatInput() {
       addMessage(activeTask.id, 'system', `${t('errors.sendFailed')}: ${msg}`);
       toast.error('Failed to send message', { description: msg });
     }
-  }, [activeTask, addMessage, setProcessing, updateTaskTitle, isOffline, pendingImages, t]);;
+  }, [activeTask, addMessage, setProcessing, updateTaskTitle, isOffline, pendingImages, t]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
+      // ── Slash menu keyboard navigation ────────────────────────────────────────
+      if (slashMenuVisible && slashCommands.length > 0) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setSlashIndex((i) => (i + 1) % slashCommands.length);
+          return;
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setSlashIndex((i) => (i - 1 + slashCommands.length) % slashCommands.length);
+          return;
+        }
+        if (e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) {
+          e.preventDefault();
+          const cmd = slashCommands[slashIndex];
+          if (cmd) commitSlashCommand(cmd);
+          return;
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          setSlashMenuVisible(false);
+          return;
+        }
+      }
+
+      // ── Normal send ───────────────────────────────────────────────────────────
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         handleSend();
       }
     },
-    [handleSend],
+    [slashMenuVisible, slashCommands, slashIndex, commitSlashCommand, handleSend],
   );
 
   const handleInput = useCallback(() => {
@@ -201,7 +261,9 @@ export default function ChatInput() {
     if (!textarea) return;
     textarea.style.height = 'auto';
     textarea.style.height = `${Math.min(textarea.scrollHeight, 160)}px`;
-  }, []);
+    // Re-evaluate slash menu on every input change
+    updateSlashMenu();
+  }, [updateSlashMenu]);
 
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
     const items = e.clipboardData?.items;
@@ -345,71 +407,87 @@ export default function ChatInput() {
           </div>
         )}
 
-        <div className={cn(
-          'flex items-end gap-2',
-          'bg-[var(--bg-elevated)] rounded-2xl p-3.5',
-          'border border-[var(--border-subtle)]',
-          'shadow-[var(--shadow-elevated)]',
-          'ring-accent-focus transition-all duration-200',
-          isOffline && 'opacity-60',
-        )}>
-          {/* Hidden file input */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={ACCEPTED_TYPES}
-            multiple
-            className="hidden"
-            onChange={handleFileSelect}
-          />
+        {/* Input area — relative wrapper for SlashCommandMenu positioning */}
+        <div className="relative">
+          {/* Slash command autocomplete menu */}
+          {slashMenuVisible && (
+            <SlashCommandMenu
+              commands={slashCommands}
+              selectedIndex={slashIndex}
+              onSelect={commitSlashCommand}
+              onHoverIndex={setSlashIndex}
+              onClose={() => setSlashMenuVisible(false)}
+            />
+          )}
 
-          {/* Attach button */}
-          <motion.div
-            whileHover={motionPresets.scale.whileHover}
-            whileTap={motionPresets.scale.whileTap}
-            transition={motionPresets.scale.transition}
-          >
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={disabled}
-              className="rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-            >
-              <Paperclip size={16} />
-            </Button>
-          </motion.div>
+          <div className={cn(
+            'flex items-end gap-2',
+            'bg-[var(--bg-elevated)] rounded-2xl p-3.5',
+            'border border-[var(--border-subtle)]',
+            'shadow-[var(--shadow-elevated)]',
+            'ring-accent-focus transition-all duration-200',
+            isOffline && 'opacity-60',
+          )}>
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={ACCEPTED_TYPES}
+              multiple
+              className="hidden"
+              onChange={handleFileSelect}
+            />
 
-          <textarea
-            ref={textareaRef}
-            rows={1}
-            placeholder={placeholder}
-            disabled={disabled}
-            onKeyDown={handleKeyDown}
-            onInput={handleInput}
-            onPaste={handlePaste}
-            className={cn(
-              'flex-1 resize-none bg-transparent',
-              'text-[var(--text-primary)] placeholder:text-[var(--text-muted)]',
-              'outline-none max-h-40 disabled:opacity-50',
-            )}
-          />
-          <motion.div
-            whileHover={motionPresets.scale.whileHover}
-            whileTap={motionPresets.scale.whileTap}
-            transition={motionPresets.scale.transition}
-          >
-            <Button
-              variant="soft"
-              size="icon"
-              onClick={handleSend}
-              disabled={disabled}
-              className="rounded-xl"
+            {/* Attach button */}
+            <motion.div
+              whileHover={motionPresets.scale.whileHover}
+              whileTap={motionPresets.scale.whileTap}
+              transition={motionPresets.scale.transition}
             >
-              <Send size={16} />
-            </Button>
-          </motion.div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={disabled}
+                className="rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+              >
+                <Paperclip size={16} />
+              </Button>
+            </motion.div>
+
+            <textarea
+              ref={textareaRef}
+              rows={1}
+              placeholder={placeholder}
+              disabled={disabled}
+              onKeyDown={handleKeyDown}
+              onInput={handleInput}
+              onPaste={handlePaste}
+              onClick={updateSlashMenu}
+              className={cn(
+                'flex-1 resize-none bg-transparent',
+                'text-[var(--text-primary)] placeholder:text-[var(--text-muted)]',
+                'outline-none max-h-40 disabled:opacity-50',
+              )}
+            />
+            <motion.div
+              whileHover={motionPresets.scale.whileHover}
+              whileTap={motionPresets.scale.whileTap}
+              transition={motionPresets.scale.transition}
+            >
+              <Button
+                variant="soft"
+                size="icon"
+                onClick={handleSend}
+                disabled={disabled}
+                className="rounded-xl"
+              >
+                <Send size={16} />
+              </Button>
+            </motion.div>
+          </div>
         </div>
+
         <p className="text-xs text-[var(--text-muted)] text-center mt-2.5 tracking-wide">
           {isOffline
             ? t('chatInput.offlineHint')

@@ -6,6 +6,10 @@ ClawWork is an OpenClaw desktop client inspired by Claude Cowork: three-panel la
 
 **Not** an OpenClaw admin console. **Not** a general-purpose IM client. **Not** a collaboration tool.
 
+## Related Repositories
+
+- **OpenClaw server source**: `~/git/openclaw` — reference for Gateway protocol, slash command definitions (`src/auto-reply/commands-registry.ts`), native command specs, and Telegram bot command registration (`extensions/telegram/src/bot-native-command-menu.ts`).
+
 ## Architecture
 
 ```
