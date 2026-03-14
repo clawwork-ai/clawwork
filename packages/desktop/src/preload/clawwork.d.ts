@@ -94,6 +94,7 @@ interface DiscoveredSession {
   sessionKey: string;
   title: string;
   updatedAt: string;
+  rawSessionRow?: Record<string, unknown>;
   messages: { role: string; content: string; timestamp: string }[];
 }
 

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import i18n from '../i18n';
+import type { ModelOption } from '@clawwork/shared';
 
 type MainView = 'chat' | 'files' | 'archived';
 
@@ -44,6 +45,10 @@ interface UiState {
   gatewayInfoMap: Record<string, GatewayInfo>;
   setGatewayInfoMap: (map: Record<string, GatewayInfo>) => void;
 
+  /** Catalog of models available per gateway */
+  modelCatalogMap: Record<string, ModelOption[]>;
+  setModelCatalog: (gatewayId: string, catalog: ModelOption[]) => void;
+
   /** taskIds with unread messages (background tasks that received new content) */
   unreadTaskIds: Set<string>;
   markUnread: (taskId: string) => void;
@@ -82,6 +87,12 @@ export const useUiStore = create<UiState>((set) => ({
 
   gatewayInfoMap: {},
   setGatewayInfoMap: (map) => set({ gatewayInfoMap: map }),
+
+  modelCatalogMap: {},
+  setModelCatalog: (gatewayId, catalog) =>
+    set((s) => ({
+      modelCatalogMap: { ...s.modelCatalogMap, [gatewayId]: catalog },
+    })),
 
   unreadTaskIds: new Set(),
   markUnread: (taskId) =>

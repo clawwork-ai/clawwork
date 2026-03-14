@@ -1,17 +1,19 @@
 import { create } from 'zustand';
 import { buildSessionKey } from '@clawwork/shared';
-import type { Task, TaskStatus } from '@clawwork/shared';
+import type { Task, TaskStatus, TaskRuntimeInfo } from '@clawwork/shared';
 import { useUiStore } from './uiStore';
 
 interface TaskState {
   tasks: Task[];
   activeTaskId: string | null;
   hydrated: boolean;
+  taskRuntimes: Record<string, TaskRuntimeInfo>;
 
   createTask: (gatewayId?: string) => Task;
   setActiveTask: (id: string | null) => void;
   updateTaskTitle: (id: string, title: string) => void;
   updateTaskStatus: (id: string, status: TaskStatus) => void;
+  setTaskRuntime: (taskId: string, runtime: TaskRuntimeInfo) => void;
   hydrate: () => Promise<void>;
   adoptTasks: (discovered: {
     taskId: string;
@@ -26,6 +28,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   tasks: [],
   activeTaskId: null,
   hydrated: false,
+  taskRuntimes: {},
 
   createTask: (gatewayId?) => {
     const resolvedGatewayId = gatewayId ?? useUiStore.getState().defaultGatewayId ?? '';
@@ -64,6 +67,12 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       tasks: s.tasks.map((t) => (t.id === id ? { ...t, status, updatedAt: now } : t)),
     }));
     window.clawwork.persistTaskUpdate({ id, status, updatedAt: now }).catch(() => {});
+  },
+
+  setTaskRuntime: (taskId, runtime) => {
+    set((s) => ({
+      taskRuntimes: { ...s.taskRuntimes, [taskId]: runtime },
+    }));
   },
 
   hydrate: async () => {

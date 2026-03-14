@@ -145,6 +145,7 @@ export function registerWsHandlers(): void {
       sessionKey: string;
       title: string;
       updatedAt: string;
+      rawSessionRow?: Record<string, unknown>;
       messages: { role: string; content: string; timestamp: string; toolCalls: ParsedToolCall[] }[];
     }[] = [];
 
@@ -222,6 +223,7 @@ export function registerWsHandlers(): void {
             updatedAt: s.updatedAt
               ? new Date(s.updatedAt).toISOString()
               : new Date().toISOString(),
+            rawSessionRow: s as unknown as Record<string, unknown>,
             messages: msgs,
           });
         }

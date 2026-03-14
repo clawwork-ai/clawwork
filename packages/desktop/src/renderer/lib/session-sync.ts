@@ -1,6 +1,8 @@
 import type { Message, MessageRole, ToolCall } from '@clawwork/shared';
 import { useTaskStore } from '../stores/taskStore';
 import { useMessageStore } from '../stores/messageStore';
+import { useUiStore } from '../stores/uiStore';
+import { deriveTaskRuntime, normalizeModelCatalog } from './session-runtime';
 
 /**
  * Load tasks and their messages from local SQLite.
@@ -37,9 +39,13 @@ export async function syncFromGateway(): Promise<void> {
   try {
     const res = await window.clawwork.syncSessions();
     if (!res.ok || !res.discovered) return;
-    const { adoptTasks } = useTaskStore.getState();
+    const { adoptTasks, setTaskRuntime } = useTaskStore.getState();
     adoptTasks(res.discovered);
     for (const d of res.discovered) {
+      if (d.rawSessionRow) {
+        const runtime = deriveTaskRuntime(d.rawSessionRow);
+        if (runtime) setTaskRuntime(d.taskId, runtime);
+      }
       if (d.messages.length === 0) continue;
       const existing = useMessageStore.getState().messagesByTask[d.taskId];
       if (existing && existing.length > 0) continue;
