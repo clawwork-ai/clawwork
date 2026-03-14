@@ -74,11 +74,18 @@ export const useMessageStore = create<MessageState>((set, get) => ({
   upsertToolCall: (taskId, tc) =>
     set((s) => {
       const msgs = s.messagesByTask[taskId] ?? [];
-      // Find the last assistant message to attach the tool call to
-      let targetIdx = -1;
+
+      let lastAssistantIdx = -1;
+      let lastUserIdx = -1;
       for (let i = msgs.length - 1; i >= 0; i--) {
-        if (msgs[i].role === 'assistant') { targetIdx = i; break; }
+        if (lastAssistantIdx < 0 && msgs[i].role === 'assistant') lastAssistantIdx = i;
+        if (lastUserIdx < 0 && msgs[i].role === 'user') lastUserIdx = i;
+        if (lastAssistantIdx >= 0 && lastUserIdx >= 0) break;
       }
+
+      const targetIdx = (lastAssistantIdx >= 0 && lastAssistantIdx > lastUserIdx)
+        ? lastAssistantIdx
+        : -1;
 
       const updatedMsgs = [...msgs];
       if (targetIdx >= 0) {
@@ -92,7 +99,6 @@ export const useMessageStore = create<MessageState>((set, get) => ({
         }
         updatedMsgs[targetIdx] = { ...target, toolCalls: nextToolCalls };
       } else {
-        // No assistant message yet — create a placeholder to host tool calls
         updatedMsgs.push({
           id: generateId(),
           taskId,
