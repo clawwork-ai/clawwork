@@ -93,6 +93,40 @@ export function registerWsHandlers(): void {
     }
   });
 
+  ipcMain.handle('ws:list-models', async (_event, payload: {
+    gatewayId: string;
+  }) => {
+    const gw = getGatewayClient(payload.gatewayId);
+    if (!gw?.isConnected) {
+      return { ok: false, error: 'gateway not connected' };
+    }
+    try {
+      const result = await gw.listModels();
+      return { ok: true, result };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'unknown error';
+      return { ok: false, error: msg };
+    }
+  });
+
+  ipcMain.handle('ws:patch-session', async (_event, payload: {
+    gatewayId: string;
+    sessionKey: string;
+    patch: { model?: string; thinkingLevel?: string };
+  }) => {
+    const gw = getGatewayClient(payload.gatewayId);
+    if (!gw?.isConnected) {
+      return { ok: false, error: 'gateway not connected' };
+    }
+    try {
+      const result = await gw.patchSession(payload.sessionKey, payload.patch);
+      return { ok: true, result };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'unknown error';
+      return { ok: false, error: msg };
+    }
+  });
+
   ipcMain.handle('ws:gateway-status', () => {
     const clients = getAllGatewayClients();
     const statusMap: Record<string, { connected: boolean; name: string }> = {};

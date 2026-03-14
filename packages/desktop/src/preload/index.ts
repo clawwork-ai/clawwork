@@ -10,6 +10,10 @@ function buildApi(): ClawWorkAPI {
       ipcRenderer.invoke('ws:chat-history', { gatewayId, sessionKey, limit }),
     listSessions: (gatewayId: string) =>
       ipcRenderer.invoke('ws:list-sessions', { gatewayId }),
+    listModels: (gatewayId: string) =>
+      ipcRenderer.invoke('ws:list-models', { gatewayId }),
+    patchSession: (gatewayId: string, sessionKey: string, patch: { model?: string; thinkingLevel?: string }) =>
+      ipcRenderer.invoke('ws:patch-session', { gatewayId, sessionKey, patch }),
     gatewayStatus: () =>
       ipcRenderer.invoke('ws:gateway-status'),
     syncSessions: () =>

@@ -308,6 +308,17 @@ export class GatewayClient {
     return this.sendReq('sessions.list', {});
   }
 
+  async listModels(): Promise<Record<string, unknown>> {
+    return this.sendReq('models.list', {});
+  }
+
+  async patchSession(sessionKey: string, patch: { model?: string; thinkingLevel?: string }): Promise<Record<string, unknown>> {
+    const payload: Record<string, unknown> = { key: sessionKey };
+    if (patch.model) payload.model = patch.model;
+    if (patch.thinkingLevel) payload.thinkingLevel = patch.thinkingLevel;
+    return this.sendReq('sessions.patch', payload);
+  }
+
   get isConnected(): boolean {
     return this.authenticated && this.ws?.readyState === WebSocket.OPEN;
   }

@@ -120,6 +120,8 @@ export interface ClawWorkAPI {
   sendMessage: (gatewayId: string, sessionKey: string, content: string, attachments?: ChatAttachment[]) => Promise<IpcResult>;
   chatHistory: (gatewayId: string, sessionKey: string, limit?: number) => Promise<IpcResult>;
   listSessions: (gatewayId: string) => Promise<IpcResult>;
+  listModels: (gatewayId: string) => Promise<IpcResult>;
+  patchSession: (gatewayId: string, sessionKey: string, patch: { model?: string; thinkingLevel?: string }) => Promise<IpcResult>;
   abortChat: (gatewayId: string, sessionKey: string) => Promise<IpcResult>;
 
   // Gateway status — returns map of all gateways
