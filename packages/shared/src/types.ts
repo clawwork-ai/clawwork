@@ -1,6 +1,6 @@
 // ============================================================
 // ClawWork Core Types
-// Shared between Desktop App and Channel Plugin
+// Shared across ClawWork packages
 // ============================================================
 
 /** Task status lifecycle: active → completed → archived */

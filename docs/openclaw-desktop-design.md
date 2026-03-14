@@ -186,7 +186,7 @@ Desktop acts as a Gateway WebSocket client, communicating via JSON-RPC style fra
 
 **Connection Handshake**: Gateway sends `connect.challenge` (containing nonce) first; client replies with a `connect` request (protocol=3, client.id=`gateway-client`, mode=`backend`).
 
-> Historical note: An earlier design featured a Desktop↔Channel Plugin dual-channel architecture (Plugin ran inside OpenClaw, communicating with Desktop via :13579 WS). Testing confirmed that a single Gateway channel handles the complete conversation flow + tool-call events. The dual-channel architecture was fully removed during the Gateway-Only refactor (G1-G9). `packages/channel-plugin` code remains in the repo but is excluded from the workspace.
+> Historical note: An earlier design featured a Desktop↔bridge dual-channel architecture (an intermediary process ran inside OpenClaw, communicating with Desktop via :13579 WS). Testing confirmed that a single Gateway channel handles the complete conversation flow + tool-call events. The dual-channel architecture was fully removed during the Gateway-Only refactor (G1-G9).
 
 ### 3.2 Session Mechanism & Multi-Task Parallelism
 
@@ -279,7 +279,7 @@ S3-compatible (AWS S3 / MinIO / Cloudflare R2)
 2. **Chat event payload structure**: `payload.message.content[]` (not `payload.content[]`). Content is an array supporting `text`, `thinking`, and `toolCall` block types
 3. **Valid Client ID/Mode**: Electron uses `client.id="gateway-client"` + `mode="backend"`. Avoid `openclaw-control-ui` (triggers browser origin check)
 4. **Broadcast filtering**: Client-side filtering by sessionKey is the current viable approach (Gateway has no session-level filtering planned)
-5. **Gateway-Only architecture is viable**: A single Gateway channel handles the complete conversation flow + tool-call events; no need for the Channel Plugin dual-channel setup
+5. **Gateway-Only architecture is viable**: A single Gateway channel handles the complete conversation flow + tool-call events; no need for the earlier dual-channel bridge setup
 
 **Open Questions:**
 
@@ -287,7 +287,7 @@ S3-compatible (AWS S3 / MinIO / Cloudflare R2)
 2. **Disabling session auto-reset**: How to configure the server to disable 4:00 AM auto-reset
 3. **Session recovery after WS reconnect**: Historical messages can be backfilled via `chat.history` RPC after reconnection
 4. **`mediaLocalRoots` configuration**: How to properly configure for the ClawWork use case
-5. ~~Channel Plugin verification~~ → Bypassed via Gateway-Only architecture
+5. ~~Legacy bridge verification~~ → Bypassed via Gateway-Only architecture
 6. ~~Broadcast filtering~~ → Client-side filtering implemented
 
 ---
@@ -458,7 +458,7 @@ Only visible in the conversation flow view (hidden in the file browser view). Ke
   - ✅ Check: `pnpm install` succeeds; packages can reference each other's types without errors
 - [x] **T1-1** `packages/desktop`: Initialize Electron app with electron-vite (React 19 + TS + Tailwind v4)
   - ✅ Check: `pnpm --filter @clawwork/desktop dev` launches a blank Electron window
-- [x] **T1-2** ~~`packages/channel-plugin`~~ (removed in the Gateway-Only refactor; code retained but not built)
+- [x] **T1-2** Remove the legacy bridge package from the workspace and codebase
 - [x] **T1-3** `packages/shared`: Define Gateway protocol types + Task/Message/Artifact types
   - ✅ Check: desktop package can import types from `@clawwork/shared`
 
@@ -687,8 +687,6 @@ clawwork/
 │   │       ├── constants.ts     # port numbers, buildSessionKey(), parseTaskIdFromSessionKey()
 │   │       └── index.ts         # barrel export
 │   │
-│   ├── channel-plugin/          # (excluded from workspace; code retained but not built)
-│   │
 │   └── desktop/                 # @clawwork/desktop — Electron desktop app
 │       ├── package.json
 │       ├── electron.vite.config.ts
@@ -811,20 +809,19 @@ clawwork (pnpm monorepo)
 
 ## 7. Key Design Decision Records
 
-### ADR-001: Why Gateway-Only Instead of Channel Plugin
+### ADR-001: Why Gateway-Only Instead of a Dual-Channel Bridge
 
-**Decision**: Implement the full conversation flow via direct Gateway WebSocket connection, without using a Channel Plugin dual-channel setup.
+**Decision**: Implement the full conversation flow via direct Gateway WebSocket connection, without using the earlier dual-channel bridge design.
 
 **Rationale**:
 - A single Gateway channel handles the complete conversation flow (`chat.send` + `chat`/`agent` events); no additional Plugin layer needed
 - One fewer IPC channel reduces architectural complexity and debugging costs
-- Avoids Channel Plugin validation bugs ([#12484]) and configuration complexity
+- Avoids legacy bridge validation bugs ([#12484]) and configuration complexity
 - The `deliver: false` parameter ensures messages don't go through external channels — only through Gateway events
 
 **History**:
-- An earlier design featured a Channel Plugin dual-channel architecture (Plugin ran inside OpenClaw, communicating with Desktop via :13579 WS)
-- During implementation, we confirmed that a single Gateway channel suffices; the Plugin dependency was removed in the Gateway-Only refactor (G1-G9)
-- `packages/channel-plugin` code is retained but excluded from the workspace
+- An earlier design featured a dual-channel bridge architecture (an intermediary process ran inside OpenClaw, communicating with Desktop via :13579 WS)
+- During implementation, we confirmed that a single Gateway channel suffices; the bridge dependency was removed in the Gateway-Only refactor (G1-G9)
 
 ### ADR-002: Why Git Repo Instead of Pure SQLite
 
@@ -878,11 +875,6 @@ clawwork (pnpm monorepo)
 - Session management: https://docs.openclaw.ai/concepts/session
 - Session compaction & persistence: https://docs.openclaw.ai/reference/session-management-compaction
 - Command queue system: https://docs.openclaw.ai/concepts/queue
-
-**Channel Plugin Reference Implementations (historical reference):**
-- Feishu Plugin: https://github.com/xzq-xu/openclaw-plugin-feishu
-- DingTalk Plugin: https://github.com/soimy/openclaw-channel-dingtalk
-- Channel Plugin development guide: https://zread.ai/openclaw/openclaw/16-channel-plugin-development
 
 **Known Issues (to follow up):**
 - sendMedia mediaLocalRoots: https://github.com/openclaw/openclaw/issues/20258
