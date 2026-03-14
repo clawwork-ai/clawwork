@@ -7,6 +7,7 @@ import { useMessageStore } from '../stores/messageStore';
 import { useTaskStore } from '../stores/taskStore';
 import { useUiStore } from '../stores/uiStore';
 import { hydrateFromLocal, syncFromGateway } from '../lib/session-sync';
+import { normalizeModelCatalog } from '../lib/session-runtime';
 
 interface ChatContentBlock {
   type: string;
