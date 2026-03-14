@@ -1,0 +1,67 @@
+name: Feature request
+description: Propose an improvement to ClawWork
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing an improvement. Focus on the problem first, not the implementation fantasy.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the current pain point or missing workflow.
+      placeholder: It is hard to compare multiple task runs without manually opening each artifact directory.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What change would you like to see?
+      description: Describe the behavior or workflow you want.
+      placeholder: Add a side-by-side compare view for task outputs and generated files.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Primary area
+      options:
+        - Renderer UI
+        - Task execution
+        - Workspace or Git artifacts
+        - Search or indexing
+        - Settings or gateway connection
+        - Packaging or install
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: user_value
+    attributes:
+      label: Why does this matter?
+      description: Explain the user value, operational value, or workflow improvement.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Describe current workarounds or other options you considered.
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
+      description: Mockups, examples from other tools, screenshots, or related links.
+    validations:
+      required: false

@@ -85,7 +85,7 @@ packages/
 
 ## Contributing
 
-Contributions are welcome. Please open an issue first to discuss what you would like to change.
+Contributions are welcome. For issue and pull request expectations, see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## License
 

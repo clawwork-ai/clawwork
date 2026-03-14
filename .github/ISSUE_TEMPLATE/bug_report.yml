@@ -1,0 +1,84 @@
+name: Bug report
+description: Report a problem in ClawWork
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. A tight repro beats a long story.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the problem and the visible impact.
+      placeholder: The app freezes after I switch workspaces while a task is still running.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the shortest reliable reproduction you have.
+      placeholder: |
+        1. Open ClawWork
+        2. Start a task
+        3. Switch to another workspace
+        4. Observe the crash
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+      placeholder: The task should keep running and the workspace switch should succeed.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - Renderer UI
+        - Task execution
+        - Workspace or Git artifacts
+        - Search or indexing
+        - Settings or gateway connection
+        - Packaging or install
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include app version, commit, OS version, and anything else relevant.
+      placeholder: |
+        ClawWork version:
+        Commit:
+        macOS / Windows version:
+        OpenClaw server version:
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs, screenshots, or recordings
+      description: Paste logs or attach screenshots if they help explain the problem.
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
+      description: Anything else that narrows the bug down.
+    validations:
+      required: false
