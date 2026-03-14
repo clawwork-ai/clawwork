@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { PanelRightOpen, RotateCcw, Archive, Plus, Server, ChevronDown, Bot, Cpu, ArrowUp, ArrowDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -341,12 +341,15 @@ function ChatContent() {
 
 function ArchivedTasks() {
   const { t } = useTranslation()
-  const archivedTasks = useTaskStore((s) =>
-    s.tasks.filter((task) => task.status === 'archived'),
-  )
+  const tasks = useTaskStore((s) => s.tasks)
   const setActiveTask = useTaskStore((s) => s.setActiveTask)
   const updateTaskStatus = useTaskStore((s) => s.updateTaskStatus)
   const setMainView = useUiStore((s) => s.setMainView)
+
+  const archivedTasks = useMemo(
+    () => tasks.filter((task) => task.status === 'archived'),
+    [tasks],
+  )
 
   const handleReactivate = (taskId: string): void => {
     updateTaskStatus(taskId, 'active')
