@@ -54,7 +54,7 @@ jobs:
         run: pnpm --filter @clawwork/desktop build
 
       - name: Package (${{ matrix.platform }})
-        run: pnpm --filter @clawwork/desktop exec electron-builder ${{ matrix.build_args }}
+        run: pnpm --filter @clawwork/desktop exec electron-builder ${{ matrix.build_args }} -c.buildVersion=$BUILD_VERSION
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BUILD_VERSION: ${{ github.run_number }}
