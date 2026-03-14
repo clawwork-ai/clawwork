@@ -7,7 +7,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { useUiStore } from '@/stores/uiStore';
@@ -75,7 +74,7 @@ export default function SessionRuntimeControls() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56 max-h-80 overflow-y-auto">
-          <DropdownMenuLabel className="text-xs text-[var(--text-muted)] font-normal">{t('chatHeader.selectModel')}</DropdownMenuLabel>
+          <div className="px-2 py-1.5 text-xs text-[var(--text-muted)] font-normal">{t('chatHeader.selectModel')}</div>
           <DropdownMenuSeparator />
           {modelCatalog.map((m) => (
             <DropdownMenuItem
