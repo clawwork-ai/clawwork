@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, type MouseEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Plus, Search, FolderOpen, Settings, Archive, Bot, ChevronDown } from 'lucide-react'
+import { Plus, Search, FolderOpen, Settings, Archive, Server, ChevronDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useTaskStore } from '@/stores/taskStore'
 import { useUiStore } from '@/stores/uiStore'
@@ -30,9 +30,10 @@ export default function LeftNav() {
   const settingsOpen = useUiStore((s) => s.settingsOpen)
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen)
   const gwStatusMap = useUiStore((s) => s.gatewayStatusMap)
+  const gwInfoMap = useUiStore((s) => s.gatewayInfoMap)
   const hasUpdate = useUiStore((s) => s.hasUpdate)
-  const agentCatalog = useUiStore((s) => s.agentCatalog)
-  const hasMultipleAgents = agentCatalog.length > 1
+  const connectedGateways = Object.values(gwInfoMap).filter((gw) => gwStatusMap[gw.id] === 'connected')
+  const hasMultipleGateways = connectedGateways.length > 1
   const searchFocusTrigger = useUiStore((s) => s.searchFocusTrigger)
 
   // Aggregate: if any gateway connected → connected; any connecting → connecting; else disconnected
@@ -89,7 +90,7 @@ export default function LeftNav() {
   return (
     <div className="flex flex-col h-full pt-14 relative">
       <div className="px-4 pb-3 space-y-2 flex-shrink-0">
-        {hasMultipleAgents ? (
+        {hasMultipleGateways ? (
           <div className="titlebar-no-drag flex items-center gap-0.5">
             <Button variant="soft" onClick={() => createTask()} className="flex-1 gap-2 rounded-r-none">
               <Plus size={16} /> {t('common.newTask')}
@@ -101,14 +102,14 @@ export default function LeftNav() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-[160px]">
-                {agentCatalog.map((agent) => (
-                  <DropdownMenuItem key={agent.id} onClick={() => createTask(undefined, agent.id)}>
-                    {agent.identity?.emoji ? (
-                      <span className="mr-2 text-base leading-none">{agent.identity.emoji}</span>
+                {connectedGateways.map((gw) => (
+                  <DropdownMenuItem key={gw.id} onClick={() => createTask(gw.id)}>
+                    {gw.color ? (
+                      <span className="mr-2 w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: gw.color }} />
                     ) : (
-                      <Bot size={12} className="mr-2 flex-shrink-0" />
+                      <Server size={12} className="mr-2 flex-shrink-0 opacity-60" />
                     )}
-                    {agent.name ?? agent.id}
+                    {gw.name}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
