@@ -24,7 +24,9 @@
     "welcomeDesc2": "过程中产生的文件会自动归档管理。",
     "starOnGithub": "觉得好用？在 GitHub 上给我们一颗 Star",
     "toggleContextPanel": "切换上下文面板",
-    "selectGateway": "选择服务器"
+    "selectGateway": "选择服务器",
+    "selectAgent": "选择智能体",
+    "defaultAgent": "默认"
   },
   "settings": {
     "appearance": "外观",
@@ -85,7 +87,10 @@
     "artifacts": "产物",
     "noProgress": "暂无进度信息",
     "xOfYCompleted": "{{done}}/{{total}} 已完成",
-    "noCommits": "暂无提交"
+    "noCommits": "暂无提交",
+    "inputTokens": "输入",
+    "outputTokens": "输出",
+    "contextUsage": "上下文"
   },
   "fileBrowser": {
     "searchFiles": "搜索文件…",
@@ -131,12 +136,19 @@
     "createTaskFirst": "请先创建一个任务…",
     "poweredBy": "由 OpenClaw 驱动 · 任务文件自动 Git 归档",
     "offlineHint": "离线模式 — 可浏览历史任务和文件",
-    "image": "图片"
+    "image": "图片",
+    "model": "模型",
+    "thinking": "思考",
+    "thinkingOff": "关闭",
+    "thinkingLow": "低",
+    "thinkingMedium": "中",
+    "thinkingHigh": "高"
   },
   "chatMessage": {
     "copyMessage": "复制消息",
     "copyCode": "复制代码",
-    "copied": "已复制"
+    "copied": "已复制",
+    "thinkingProcess": "思考过程"
   },
   "dialog": {
     "selectWorkspaceDir": "选择工作空间目录"

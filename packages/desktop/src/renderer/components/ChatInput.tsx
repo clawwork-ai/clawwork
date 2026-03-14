@@ -1,12 +1,17 @@
 import { useRef, useCallback, useState, useEffect, type KeyboardEvent, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Paperclip, X } from 'lucide-react';
+import { Send, Paperclip, X, ChevronDown, Cpu, Brain } from 'lucide-react';
 import type { MessageImageAttachment } from '@clawwork/shared';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { motion as motionPresets } from '@/styles/design-tokens';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu, DropdownMenuTrigger,
+  DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { useTaskStore } from '../stores/taskStore';
 import { useMessageStore } from '../stores/messageStore';
 import { useUiStore } from '../stores/uiStore';
@@ -49,6 +54,16 @@ function readAsBase64(file: File): Promise<string> {
   });
 }
 
+const THINKING_LEVELS = ['off', 'low', 'medium', 'high'] as const;
+type ThinkingLevel = typeof THINKING_LEVELS[number];
+
+const THINKING_LABEL_KEYS: Record<ThinkingLevel, string> = {
+  off: 'chatInput.thinkingOff',
+  low: 'chatInput.thinkingLow',
+  medium: 'chatInput.thinkingMedium',
+  high: 'chatInput.thinkingHigh',
+};
+
 export default function ChatInput() {
   const { t } = useTranslation();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -67,6 +82,32 @@ export default function ChatInput() {
     const gwStatus = s.gatewayStatusMap[activeTask.gatewayId];
     return gwStatus === 'disconnected' || gwStatus === undefined;
   });
+
+  const modelCatalog = useUiStore((s) => s.modelCatalog);
+  const currentModel = activeTask?.model;
+  const currentThinking = (activeTask?.thinkingLevel ?? 'off') as ThinkingLevel;
+  const modelLabel = currentModel
+    ? modelCatalog.find((m) => m.id === currentModel)?.name ?? currentModel.split('/').pop() ?? currentModel
+    : modelCatalog[0]?.name ?? 'Default';
+
+  const handleModelChange = useCallback((modelId: string) => {
+    if (!activeTask) return;
+    const { updateTaskMetadata } = useTaskStore.getState();
+    updateTaskMetadata(activeTask.id, { model: modelId });
+    window.clawwork.patchSession(activeTask.gatewayId, activeTask.sessionKey, { model: modelId }).catch(() => {
+      toast.error('Failed to update model');
+    });
+  }, [activeTask]);
+
+  const handleThinkingChange = useCallback((level: ThinkingLevel) => {
+    if (!activeTask) return;
+    const { updateTaskMetadata } = useTaskStore.getState();
+    const value = level === 'off' ? null : level;
+    updateTaskMetadata(activeTask.id, { thinkingLevel: value ?? undefined });
+    window.clawwork.patchSession(activeTask.gatewayId, activeTask.sessionKey, { thinkingLevel: value }).catch(() => {
+      toast.error('Failed to update thinking level');
+    });
+  }, [activeTask]);
 
   // Revoke blob URLs on cleanup
   useEffect(() => {
@@ -234,6 +275,74 @@ export default function ChatInput() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Model & Thinking toolbar */}
+        {activeTask && !isOffline && (
+          <div className="flex items-center gap-1.5 mb-1.5">
+            {/* Model selector */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className={cn(
+                  'inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs',
+                  'text-[var(--text-muted)] hover:text-[var(--text-secondary)]',
+                  'hover:bg-[var(--bg-hover)] transition-colors',
+                )}>
+                  <Cpu size={12} className="flex-shrink-0" />
+                  <span className="max-w-[100px] truncate">{modelLabel}</span>
+                  <ChevronDown size={10} className="opacity-50" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="max-h-60 overflow-y-auto">
+                {modelCatalog.map((m) => (
+                  <DropdownMenuItem
+                    key={m.id}
+                    onClick={() => handleModelChange(m.id)}
+                    className={cn(m.id === currentModel && 'font-medium text-[var(--accent)]')}
+                  >
+                    <span className="truncate">{m.name ?? m.id}</span>
+                    {m.provider && (
+                      <span className="ml-auto pl-2 text-[10px] text-[var(--text-muted)]">{m.provider}</span>
+                    )}
+                  </DropdownMenuItem>
+                ))}
+                {modelCatalog.length === 0 && (
+                  <DropdownMenuItem disabled>
+                    <span className="text-[var(--text-muted)] italic">No models available</span>
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenuSeparator className="h-4 w-px mx-0.5" />
+
+            {/* Thinking level selector */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className={cn(
+                  'inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs',
+                  'text-[var(--text-muted)] hover:text-[var(--text-secondary)]',
+                  'hover:bg-[var(--bg-hover)] transition-colors',
+                  currentThinking !== 'off' && 'text-[var(--accent)]',
+                )}>
+                  <Brain size={12} className="flex-shrink-0" />
+                  <span>{t(THINKING_LABEL_KEYS[currentThinking])}</span>
+                  <ChevronDown size={10} className="opacity-50" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {THINKING_LEVELS.map((level) => (
+                  <DropdownMenuItem
+                    key={level}
+                    onClick={() => handleThinkingChange(level)}
+                    className={cn(level === currentThinking && 'font-medium text-[var(--accent)]')}
+                  >
+                    {t(THINKING_LABEL_KEYS[level])}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
 
         <div className={cn(
           'flex items-end gap-2',

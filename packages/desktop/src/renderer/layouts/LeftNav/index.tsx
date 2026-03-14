@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, type MouseEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Plus, Search, FolderOpen, Settings, Archive } from 'lucide-react'
+import { Plus, Search, FolderOpen, Settings, Archive, Bot, ChevronDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useTaskStore } from '@/stores/taskStore'
 import { useUiStore } from '@/stores/uiStore'
@@ -30,6 +30,8 @@ export default function LeftNav() {
   const settingsOpen = useUiStore((s) => s.settingsOpen)
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen)
   const gwStatusMap = useUiStore((s) => s.gatewayStatusMap)
+  const agentCatalog = useUiStore((s) => s.agentCatalog)
+  const hasMultipleAgents = agentCatalog.length > 1
 
   // Aggregate: if any gateway connected → connected; any connecting → connecting; else disconnected
   const gwStatusValues = Object.values(gwStatusMap)
@@ -78,9 +80,36 @@ export default function LeftNav() {
   return (
     <div className="flex flex-col h-full pt-14 relative">
       <div className="px-4 pb-3 space-y-2 flex-shrink-0">
-        <Button variant="soft" onClick={() => createTask()} className="titlebar-no-drag w-full gap-2">
-          <Plus size={16} /> {t('common.newTask')}
-        </Button>
+        {hasMultipleAgents ? (
+          <div className="titlebar-no-drag flex items-center gap-0.5">
+            <Button variant="soft" onClick={() => createTask()} className="flex-1 gap-2 rounded-r-none">
+              <Plus size={16} /> {t('common.newTask')}
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="soft" className="px-1.5 rounded-l-none border-l border-[var(--border)]">
+                  <ChevronDown size={14} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-[160px]">
+                {agentCatalog.map((agent) => (
+                  <DropdownMenuItem key={agent.id} onClick={() => createTask(undefined, agent.id)}>
+                    {agent.identity?.emoji ? (
+                      <span className="mr-2 text-base leading-none">{agent.identity.emoji}</span>
+                    ) : (
+                      <Bot size={12} className="mr-2 flex-shrink-0" />
+                    )}
+                    {agent.name ?? agent.id}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        ) : (
+          <Button variant="soft" onClick={() => createTask()} className="titlebar-no-drag w-full gap-2">
+            <Plus size={16} /> {t('common.newTask')}
+          </Button>
+        )}
         <div className="titlebar-no-drag relative">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
           <input

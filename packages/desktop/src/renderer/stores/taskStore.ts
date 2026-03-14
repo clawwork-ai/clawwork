@@ -8,10 +8,18 @@ interface TaskState {
   activeTaskId: string | null;
   hydrated: boolean;
 
-  createTask: (gatewayId?: string) => Task;
+  createTask: (gatewayId?: string, agentId?: string) => Task;
   setActiveTask: (id: string | null) => void;
   updateTaskTitle: (id: string, title: string) => void;
   updateTaskStatus: (id: string, status: TaskStatus) => void;
+  updateTaskMetadata: (id: string, meta: {
+    model?: string;
+    modelProvider?: string;
+    thinkingLevel?: string;
+    inputTokens?: number;
+    outputTokens?: number;
+    contextTokens?: number;
+  }) => void;
   hydrate: () => Promise<void>;
   adoptTasks: (discovered: {
     taskId: string;
@@ -19,6 +27,13 @@ interface TaskState {
     title: string;
     updatedAt: string;
     gatewayId: string;
+    agentId?: string;
+    model?: string;
+    modelProvider?: string;
+    thinkingLevel?: string;
+    inputTokens?: number;
+    outputTokens?: number;
+    contextTokens?: number;
   }[]) => void;
 }
 
@@ -27,13 +42,13 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   activeTaskId: null,
   hydrated: false,
 
-  createTask: (gatewayId?) => {
+  createTask: (gatewayId?, agentId?) => {
     const resolvedGatewayId = gatewayId ?? useUiStore.getState().defaultGatewayId ?? '';
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
     const task: Task = {
       id,
-      sessionKey: buildSessionKey(id),
+      sessionKey: buildSessionKey(id, agentId),
       sessionId: '',
       title: '',
       status: 'active',
@@ -42,6 +57,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       tags: [],
       artifactDir: '',
       gatewayId: resolvedGatewayId,
+      agentId: agentId ?? 'main',
     };
     set((s) => ({ tasks: [task, ...s.tasks], activeTaskId: id }));
     window.clawwork.persistTask(task).catch(() => {});
@@ -64,6 +80,12 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       tasks: s.tasks.map((t) => (t.id === id ? { ...t, status, updatedAt: now } : t)),
     }));
     window.clawwork.persistTaskUpdate({ id, status, updatedAt: now }).catch(() => {});
+  },
+
+  updateTaskMetadata: (id, meta) => {
+    set((s) => ({
+      tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...meta } : t)),
+    }));
   },
 
   hydrate: async () => {
@@ -102,6 +124,13 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           tags: [],
           artifactDir: '',
           gatewayId: d.gatewayId,
+          agentId: d.agentId,
+          model: d.model,
+          modelProvider: d.modelProvider,
+          thinkingLevel: d.thinkingLevel,
+          inputTokens: d.inputTokens,
+          outputTokens: d.outputTokens,
+          contextTokens: d.contextTokens,
         };
         newTasks.push(task);
       }

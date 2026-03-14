@@ -33,3 +33,9 @@ export function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
+
+export function formatTokenCount(tokens: number): string {
+  if (tokens < 1000) return String(tokens)
+  if (tokens < 100_000) return `${(tokens / 1000).toFixed(1)}k`
+  return `${(tokens / 1000).toFixed(0)}k`
+}

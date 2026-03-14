@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron';
 import { getGatewayClient, getAllGatewayClients } from '../ws/index.js';
 import { readConfig } from '../workspace/config.js';
-import { isClawWorkSession, parseTaskIdFromSessionKey } from '@clawwork/shared';
+import { isClawWorkSession, parseTaskIdFromSessionKey, parseAgentIdFromSessionKey } from '@clawwork/shared';
 import type { ChatAttachment } from '@clawwork/shared';
 
 interface GatewaySessionRow {
@@ -11,6 +11,15 @@ interface GatewaySessionRow {
   derivedTitle?: string;
   label?: string;
   displayName?: string;
+  model?: string;
+  modelProvider?: string;
+  thinkingLevel?: string;
+  reasoningLevel?: string;
+  fastMode?: boolean;
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+  contextTokens?: number;
 }
 
 interface SessionsListPayload {
@@ -111,6 +120,13 @@ export function registerWsHandlers(): void {
       sessionKey: string;
       title: string;
       updatedAt: string;
+      agentId: string;
+      model?: string;
+      modelProvider?: string;
+      thinkingLevel?: string;
+      inputTokens?: number;
+      outputTokens?: number;
+      contextTokens?: number;
       messages: { role: string; content: string; timestamp: string; toolCalls: ParsedToolCall[] }[];
     }[] = [];
 
@@ -188,6 +204,13 @@ export function registerWsHandlers(): void {
             updatedAt: s.updatedAt
               ? new Date(s.updatedAt).toISOString()
               : new Date().toISOString(),
+            agentId: parseAgentIdFromSessionKey(s.key),
+            model: s.model,
+            modelProvider: s.modelProvider,
+            thinkingLevel: s.thinkingLevel,
+            inputTokens: s.inputTokens,
+            outputTokens: s.outputTokens,
+            contextTokens: s.contextTokens,
             messages: msgs,
           });
         }
@@ -198,6 +221,46 @@ export function registerWsHandlers(): void {
     }
 
     return { ok: true, discovered };
+  });
+
+  ipcMain.handle('ws:models-list', async (_event, payload: { gatewayId: string }) => {
+    const gw = getGatewayClient(payload.gatewayId);
+    if (!gw?.isConnected) return { ok: false, error: 'gateway not connected' };
+    try {
+      const result = await gw.listModels();
+      return { ok: true, result };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'unknown error';
+      return { ok: false, error: msg };
+    }
+  });
+
+  ipcMain.handle('ws:agents-list', async (_event, payload: { gatewayId: string }) => {
+    const gw = getGatewayClient(payload.gatewayId);
+    if (!gw?.isConnected) return { ok: false, error: 'gateway not connected' };
+    try {
+      const result = await gw.listAgents();
+      return { ok: true, result };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'unknown error';
+      return { ok: false, error: msg };
+    }
+  });
+
+  ipcMain.handle('ws:session-patch', async (_event, payload: {
+    gatewayId: string;
+    sessionKey: string;
+    patch: Record<string, unknown>;
+  }) => {
+    const gw = getGatewayClient(payload.gatewayId);
+    if (!gw?.isConnected) return { ok: false, error: 'gateway not connected' };
+    try {
+      const result = await gw.patchSession({ sessionKey: payload.sessionKey, ...payload.patch });
+      return { ok: true, result };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'unknown error';
+      return { ok: false, error: msg };
+    }
   });
 
   ipcMain.handle('ws:list-gateways', async () => {

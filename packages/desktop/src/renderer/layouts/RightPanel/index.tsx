@@ -1,9 +1,9 @@
 import { motion } from 'framer-motion'
-import { X, FileText, GitBranch, CheckSquare, Square, Loader2 } from 'lucide-react'
+import { X, FileText, GitBranch, CheckSquare, Square, Loader2, Cpu, ArrowUp, ArrowDown, Brain } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useTaskStore } from '@/stores/taskStore'
 import { useMessageStore, EMPTY_MESSAGES } from '@/stores/messageStore'
-import { cn } from '@/lib/utils'
+import { cn, formatTokenCount } from '@/lib/utils'
 import { motion as motionPresets } from '@/styles/design-tokens'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -57,6 +57,9 @@ function StepIcon({ status }: { status: ProgressStep['status'] }) {
 export default function RightPanel({ onClose }: RightPanelProps) {
   const { t } = useTranslation()
   const activeTaskId = useTaskStore((s) => s.activeTaskId)
+  const activeTask = useTaskStore((s) =>
+    s.tasks.find((task) => task.id === s.activeTaskId),
+  )
   const messages = useMessageStore((s) =>
     activeTaskId ? (s.messagesByTask[activeTaskId] ?? EMPTY_MESSAGES) : EMPTY_MESSAGES,
   )
@@ -83,6 +86,52 @@ export default function RightPanel({ onClose }: RightPanelProps) {
 
         <ScrollArea className="flex-1">
           <TabsContent value="progress" className="p-4">
+            {activeTask && (activeTask.model || activeTask.inputTokens != null) && (
+              <div className="mb-3 p-3 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border)] space-y-2">
+                {activeTask.model && (
+                  <div className="flex items-center gap-1.5 text-sm text-[var(--text-secondary)]">
+                    <Cpu size={13} className="text-[var(--text-muted)] flex-shrink-0" />
+                    <span className="truncate">{activeTask.model}</span>
+                  </div>
+                )}
+                {activeTask.thinkingLevel && activeTask.thinkingLevel !== 'off' && (
+                  <div className="flex items-center gap-1.5 text-sm text-[var(--text-secondary)]">
+                    <Brain size={13} className="text-[var(--text-muted)] flex-shrink-0" />
+                    <span>{t('chatInput.thinking')}: {t(`chatInput.thinking${activeTask.thinkingLevel.charAt(0).toUpperCase()}${activeTask.thinkingLevel.slice(1)}`)}</span>
+                  </div>
+                )}
+                {(activeTask.inputTokens != null || activeTask.outputTokens != null) && (
+                  <div className="flex items-center gap-3 text-xs text-[var(--text-muted)]">
+                    {activeTask.inputTokens != null && (
+                      <span className="inline-flex items-center gap-0.5">
+                        <ArrowUp size={10} />
+                        {t('rightPanel.inputTokens')}: {formatTokenCount(activeTask.inputTokens)}
+                      </span>
+                    )}
+                    {activeTask.outputTokens != null && (
+                      <span className="inline-flex items-center gap-0.5">
+                        <ArrowDown size={10} />
+                        {t('rightPanel.outputTokens')}: {formatTokenCount(activeTask.outputTokens)}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {activeTask.contextTokens != null && activeTask.contextTokens > 0 && (
+                  <div className="text-xs text-[var(--text-muted)]">
+                    <div className="flex items-center justify-between mb-1">
+                      <span>{t('rightPanel.contextUsage')}</span>
+                      <span>{Math.round((activeTask.contextTokens / 200_000) * 100)}%</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-[var(--bg-secondary)] overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-[var(--accent)] transition-all duration-300"
+                        style={{ width: `${Math.min(100, (activeTask.contextTokens / 200_000) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             {steps.length === 0 ? (
               <p className="text-sm text-[var(--text-muted)] text-center py-4">{t('rightPanel.noProgress')}</p>
             ) : (

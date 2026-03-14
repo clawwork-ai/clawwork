@@ -12,6 +12,10 @@ import { registerDataHandlers } from './ipc/data-handlers.js';
 import { getWorkspacePath, readConfig } from './workspace/config.js';
 import { initDatabase, closeDatabase } from './db/index.js';
 
+// Prevent EPIPE crashes when stdout/stderr pipe is broken (common in dev mode)
+process.stdout?.on?.('error', () => {});
+process.stderr?.on?.('error', () => {});
+
 const SCREENSHOT_PATH = '/tmp/clawwork-screenshot.png';
 
 async function captureScreenshot(win: BrowserWindow): Promise<string> {

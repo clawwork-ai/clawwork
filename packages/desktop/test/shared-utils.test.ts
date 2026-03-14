@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   buildSessionKey,
   parseTaskIdFromSessionKey,
+  parseAgentIdFromSessionKey,
   isClawWorkSession,
   mergeGatewayStreamText,
   SESSION_KEY_PREFIX,
@@ -12,16 +13,31 @@ describe('buildSessionKey', () => {
     expect(buildSessionKey('abc-123')).toBe('agent:main:clawwork:task:abc-123');
   });
 
+  it('creates a session key with custom agentId', () => {
+    expect(buildSessionKey('abc-123', 'research')).toBe('agent:research:clawwork:task:abc-123');
+  });
+
   it('round-trips through parseTaskIdFromSessionKey', () => {
     const taskId = 'my-task-uuid';
     const key = buildSessionKey(taskId);
     expect(parseTaskIdFromSessionKey(key)).toBe(taskId);
+  });
+
+  it('round-trips with custom agentId', () => {
+    const taskId = 'task-uuid';
+    const key = buildSessionKey(taskId, 'code-review');
+    expect(parseTaskIdFromSessionKey(key)).toBe(taskId);
+    expect(parseAgentIdFromSessionKey(key)).toBe('code-review');
   });
 });
 
 describe('parseTaskIdFromSessionKey', () => {
   it('extracts task id from a clawwork session key', () => {
     expect(parseTaskIdFromSessionKey(`${SESSION_KEY_PREFIX}task-42`)).toBe('task-42');
+  });
+
+  it('extracts task id from non-main agent session key', () => {
+    expect(parseTaskIdFromSessionKey('agent:research:clawwork:task:task-99')).toBe('task-99');
   });
 
   it('handles legacy session key format', () => {
@@ -37,9 +53,23 @@ describe('parseTaskIdFromSessionKey', () => {
   });
 });
 
+describe('parseAgentIdFromSessionKey', () => {
+  it('extracts agent id from session key', () => {
+    expect(parseAgentIdFromSessionKey('agent:research:clawwork:task:t1')).toBe('research');
+  });
+
+  it('defaults to main for unrecognised keys', () => {
+    expect(parseAgentIdFromSessionKey('random-garbage')).toBe('main');
+  });
+});
+
 describe('isClawWorkSession', () => {
   it('returns true for clawwork session keys', () => {
     expect(isClawWorkSession(`${SESSION_KEY_PREFIX}task-1`)).toBe(true);
+  });
+
+  it('returns true for non-main agent clawwork keys', () => {
+    expect(isClawWorkSession('agent:research:clawwork:task:t1')).toBe(true);
   });
 
   it('returns false for other session keys', () => {

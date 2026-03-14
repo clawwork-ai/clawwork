@@ -49,6 +49,13 @@ export interface Task {
   tags: string[];
   artifactDir: string;
   gatewayId: string;
+  agentId?: string;
+  model?: string;
+  modelProvider?: string;
+  thinkingLevel?: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  contextTokens?: number;
 }
 
 /** Image attachment stored with a user message for UI preview */
@@ -68,6 +75,8 @@ export interface Message {
   /** Image attachments sent with user messages (for inline preview) */
   imageAttachments?: MessageImageAttachment[];
   timestamp: string; // ISO 8601
+  runId?: string;
+  thinkingContent?: string;
 }
 
 export interface Artifact {
@@ -115,4 +124,52 @@ export interface ChatAttachment {
   mimeType: string;   // e.g. "image/png", "image/jpeg"
   fileName: string;
   content: string;    // base64-encoded (no data URL prefix)
+}
+
+// ------------------------------------------------------------
+// Gateway Agent / Model catalog
+// ------------------------------------------------------------
+
+export interface AgentIdentity {
+  name?: string;
+  theme?: string;
+  emoji?: string;
+  avatar?: string;
+  avatarUrl?: string;
+}
+
+export interface AgentInfo {
+  id: string;
+  name?: string;
+  identity?: AgentIdentity;
+}
+
+export interface AgentListResponse {
+  defaultId: string;
+  mainKey: string;
+  scope: string;
+  agents: AgentInfo[];
+}
+
+export interface ModelCatalogEntry {
+  id: string;
+  name?: string;
+  provider?: string;
+  [key: string]: unknown;
+}
+
+export interface ModelListResponse {
+  models: ModelCatalogEntry[];
+}
+
+export interface SessionPatchParams {
+  sessionKey: string;
+  thinkingLevel?: string | null;
+  fastMode?: boolean | null;
+  model?: string | null;
+  reasoningLevel?: string | null;
+  elevatedLevel?: string | null;
+  verboseLevel?: string | null;
+  responseUsage?: string | null;
+  label?: string | null;
 }

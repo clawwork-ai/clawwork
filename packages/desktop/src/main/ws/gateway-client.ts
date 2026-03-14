@@ -96,15 +96,19 @@ export class GatewayClient {
     });
 
     this.ws.on('close', (code, reason) => {
-      console.log(`[gateway:${this.gatewayId}] closed: ${code} ${reason}`);
+      const reasonStr = reason.toString();
+      console.log(`[gateway:${this.gatewayId}] closed: ${code} ${reasonStr}`);
       this.authenticated = false;
       this.stopHeartbeat();
       if (this.mainWindow) {
         sendToWindow(this.mainWindow, 'gateway-status', {
           gatewayId: this.gatewayId,
           connected: false,
+          ...(code === 1008 ? { error: reasonStr || 'policy violation' } : {}),
         });
       }
+      // Don't retry when server explicitly rejects (pairing required, auth denied)
+      if (code === 1008) return;
       this.scheduleReconnect();
     });
 
@@ -224,7 +228,7 @@ export class GatewayClient {
         }
       })
       .catch((err: Error) => {
-        console.error(`[gateway:${this.gatewayId}] connect handshake failed:`, err.message, err);
+        console.log(`[gateway:${this.gatewayId}] connect handshake failed: ${err.message}`);
         this.ws?.close();
       });
   }
@@ -306,6 +310,18 @@ export class GatewayClient {
 
   async listSessions(): Promise<Record<string, unknown>> {
     return this.sendReq('sessions.list', {});
+  }
+
+  async listModels(): Promise<Record<string, unknown>> {
+    return this.sendReq('models.list', {});
+  }
+
+  async listAgents(): Promise<Record<string, unknown>> {
+    return this.sendReq('agents.list', {});
+  }
+
+  async patchSession(params: Record<string, unknown>): Promise<Record<string, unknown>> {
+    return this.sendReq('sessions.patch', params);
   }
 
   get isConnected(): boolean {

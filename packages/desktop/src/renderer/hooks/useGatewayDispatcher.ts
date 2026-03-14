@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { parseTaskIdFromSessionKey } from '@clawwork/shared';
-import type { ToolCall, ToolCallStatus } from '@clawwork/shared';
+import type { ToolCall, ToolCallStatus, ModelListResponse, AgentListResponse } from '@clawwork/shared';
 import { toast } from 'sonner';
 import i18n from '../i18n';
 import { useMessageStore } from '../stores/messageStore';
@@ -81,11 +81,15 @@ export function useGatewayEventDispatcher(): void {
 
       const store = useMessageStore.getState();
       const text = extractText(payload);
+      const thinking = extractThinking(payload);
 
       if (state === 'delta') {
         if (text) {
           store.setProcessing(taskId, false);
           store.appendStreamDelta(taskId, text);
+        }
+        if (thinking) {
+          store.appendThinkingDelta(taskId, thinking);
         }
         // Also process toolCall blocks from delta content
         const toolCalls = extractToolCalls(payload);
@@ -97,6 +101,9 @@ export function useGatewayEventDispatcher(): void {
         if (text) {
           store.appendStreamDelta(taskId, text);
         }
+        if (thinking) {
+          store.appendThinkingDelta(taskId, thinking);
+        }
         // Extract and attach any toolCall blocks before finalizing
         const toolCalls = extractToolCalls(payload);
         for (const tc of toolCalls) {
@@ -104,6 +111,8 @@ export function useGatewayEventDispatcher(): void {
         }
         store.finalizeStream(taskId);
         autoTitleIfNeeded(taskId);
+        // Refresh session metadata to pick up token counts
+        refreshSessionMetadata(sessionKey);
       } else if (state === 'error' || state === 'aborted') {
         store.setProcessing(taskId, false);
         store.finalizeStream(taskId);
@@ -184,6 +193,9 @@ export function useGatewayEventDispatcher(): void {
       if (connectedGatewaysRef.current.size > 0 && !syncedRef.current) {
         syncedRef.current = true;
         syncFromGateway();
+        // Fetch catalogs from the first connected gateway
+        const firstConnected = connectedGatewaysRef.current.values().next().value;
+        if (firstConnected) fetchCatalogs(firstConnected);
       }
     });
 
@@ -215,6 +227,7 @@ export function useGatewayEventDispatcher(): void {
           syncedRef.current = true;
           syncFromGateway();
         }
+        fetchCatalogs(s.gatewayId);
       } else if (!s.connected && wasConnected) {
         connectedGatewaysRef.current.delete(s.gatewayId);
         toast.warning(i18n.t('connection.lostConnection'), { description: i18n.t('connection.reconnecting') });
@@ -233,6 +246,15 @@ function extractText(payload: ChatEventPayload): string {
       .join('');
   }
   return payload.text ?? '';
+}
+
+function extractThinking(payload: ChatEventPayload): string {
+  const blocks = payload.message?.content ?? payload.content;
+  if (!blocks) return '';
+  return blocks
+    .filter((b) => b.type === 'thinking' && b.thinking)
+    .map((b) => b.thinking!)
+    .join('');
 }
 
 /** Extract toolCall blocks from a chat event's content array into ToolCall objects */
@@ -276,4 +298,32 @@ function autoTitleIfNeeded(taskId: string): void {
       }
     }
   }
+}
+
+async function fetchCatalogs(gatewayId: string): Promise<void> {
+  const { setModelCatalog, setAgentCatalog } = useUiStore.getState();
+  try {
+    const [modelsRes, agentsRes] = await Promise.all([
+      window.clawwork.listModels(gatewayId),
+      window.clawwork.listAgents(gatewayId),
+    ]);
+    if (modelsRes.ok && modelsRes.result) {
+      const data = modelsRes.result as unknown as ModelListResponse;
+      if (data.models) setModelCatalog(data.models);
+    }
+    if (agentsRes.ok && agentsRes.result) {
+      const data = agentsRes.result as unknown as AgentListResponse;
+      if (data.agents) setAgentCatalog(data.agents, data.defaultId);
+    }
+  } catch {
+    console.warn('[catalogs] Failed to fetch model/agent catalogs');
+  }
+}
+
+function refreshSessionMetadata(sessionKey: string): void {
+  // Re-sync session metadata from gateway to pick up updated token counts
+  // Use a small delay to let the server finish writing the session store
+  setTimeout(() => {
+    syncFromGateway().catch(() => {});
+  }, 500);
 }

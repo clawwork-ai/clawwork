@@ -1,6 +1,6 @@
 import { type MouseEvent } from 'react'
 import { motion } from 'framer-motion'
-import { MessageSquare, Circle, Loader2, Server } from 'lucide-react'
+import { MessageSquare, Circle, Loader2, Server, Cpu, Bot } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { formatRelativeTime } from '@/lib/utils'
@@ -26,6 +26,8 @@ export default function TaskItem({ task, active, onContextMenu }: TaskItemProps)
   const isStreaming = useMessageStore((s) => !!s.streamingByTask[task.id])
   const gwInfo = useUiStore((s) => s.gatewayInfoMap[task.gatewayId])
   const multiGateway = useUiStore((s) => Object.keys(s.gatewayInfoMap).length > 1)
+  const agentInfo = useUiStore((s) => task.agentId && task.agentId !== 'main' ? s.agentCatalog.find((a) => a.id === task.agentId) : undefined)
+  const modelLabel = task.model?.split('/').pop()
 
   const handleClick = (): void => {
     setActiveTask(task.id)
@@ -80,6 +82,32 @@ export default function TaskItem({ task, active, onContextMenu }: TaskItemProps)
                 </span>
               </TooltipTrigger>
               <TooltipContent>{gwInfo.name}</TooltipContent>
+            </Tooltip>
+          )}
+          {agentInfo && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-muted)] max-w-[80px] truncate">
+                  {agentInfo.identity?.emoji ? (
+                    <span className="text-xs leading-none">{agentInfo.identity.emoji}</span>
+                  ) : (
+                    <Bot size={9} className="flex-shrink-0 opacity-60" />
+                  )}
+                  {agentInfo.name ?? agentInfo.id}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>{agentInfo.name ?? agentInfo.id}</TooltipContent>
+            </Tooltip>
+          )}
+          {modelLabel && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-muted)] max-w-[80px] truncate">
+                  <Cpu size={9} className="flex-shrink-0 opacity-60" />
+                  {modelLabel}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>{task.model}</TooltipContent>
             </Tooltip>
           )}
           <p className="text-xs text-[var(--text-muted)]">

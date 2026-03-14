@@ -37,9 +37,19 @@ export async function syncFromGateway(): Promise<void> {
   try {
     const res = await window.clawwork.syncSessions();
     if (!res.ok || !res.discovered) return;
-    const { adoptTasks } = useTaskStore.getState();
+    const { adoptTasks, updateTaskMetadata } = useTaskStore.getState();
     adoptTasks(res.discovered);
+
     for (const d of res.discovered) {
+      // Update metadata for existing tasks (adoptTasks only creates new ones)
+      updateTaskMetadata(d.taskId, {
+        model: d.model,
+        modelProvider: d.modelProvider,
+        thinkingLevel: d.thinkingLevel,
+        inputTokens: d.inputTokens,
+        outputTokens: d.outputTokens,
+        contextTokens: d.contextTokens,
+      });
       if (d.messages.length === 0) continue;
       const existing = useMessageStore.getState().messagesByTask[d.taskId];
       if (existing && existing.length > 0) continue;

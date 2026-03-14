@@ -18,6 +18,12 @@ function buildApi(): ClawWorkAPI {
       ipcRenderer.invoke('ws:abort-chat', { gatewayId, sessionKey }),
     listGateways: () =>
       ipcRenderer.invoke('ws:list-gateways'),
+    listModels: (gatewayId: string) =>
+      ipcRenderer.invoke('ws:models-list', { gatewayId }),
+    listAgents: (gatewayId: string) =>
+      ipcRenderer.invoke('ws:agents-list', { gatewayId }),
+    patchSession: (gatewayId: string, sessionKey: string, patch: Record<string, unknown>) =>
+      ipcRenderer.invoke('ws:session-patch', { gatewayId, sessionKey, patch }),
 
     onGatewayEvent: (callback) => {
       const listener = (_event: Electron.IpcRendererEvent, data: unknown): void => {

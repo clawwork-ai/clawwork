@@ -94,6 +94,13 @@ interface DiscoveredSession {
   sessionKey: string;
   title: string;
   updatedAt: string;
+  agentId: string;
+  model?: string;
+  modelProvider?: string;
+  thinkingLevel?: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  contextTokens?: number;
   messages: { role: string; content: string; timestamp: string }[];
 }
 
@@ -121,6 +128,11 @@ export interface ClawWorkAPI {
   chatHistory: (gatewayId: string, sessionKey: string, limit?: number) => Promise<IpcResult>;
   listSessions: (gatewayId: string) => Promise<IpcResult>;
   abortChat: (gatewayId: string, sessionKey: string) => Promise<IpcResult>;
+
+  // Model / Agent / Session config
+  listModels: (gatewayId: string) => Promise<IpcResult>;
+  listAgents: (gatewayId: string) => Promise<IpcResult>;
+  patchSession: (gatewayId: string, sessionKey: string, patch: Record<string, unknown>) => Promise<IpcResult>;
 
   // Gateway status — returns map of all gateways
   gatewayStatus: () => Promise<GatewayStatusMap>;

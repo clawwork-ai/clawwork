@@ -10,6 +10,8 @@ interface MessageState {
   messagesByTask: Record<string, Message[]>;
   /** taskId → currently streaming assistant content (delta accumulator) */
   streamingByTask: Record<string, string>;
+  /** taskId → currently streaming thinking content */
+  streamingThinkingByTask: Record<string, string>;
   /** Set of taskIds currently waiting for Agent response */
   processingTasks: Set<string>;
   /** message ID to highlight (e.g. from file navigation) */
@@ -22,6 +24,7 @@ interface MessageState {
   /** Bulk-load messages into store without persisting to DB */
   bulkLoad: (taskId: string, msgs: Message[]) => void;
   appendStreamDelta: (taskId: string, delta: string) => void;
+  appendThinkingDelta: (taskId: string, delta: string) => void;
   finalizeStream: (taskId: string) => void;
   clearMessages: (taskId: string) => void;
   setHighlightedMessage: (id: string | null) => void;
@@ -37,6 +40,7 @@ function generateId(): string {
 export const useMessageStore = create<MessageState>((set, get) => ({
   messagesByTask: {},
   streamingByTask: {},
+  streamingThinkingByTask: {},
   processingTasks: new Set(),
   highlightedMessageId: null,
 
@@ -120,16 +124,26 @@ export const useMessageStore = create<MessageState>((set, get) => ({
       },
     })),
 
+  appendThinkingDelta: (taskId, delta) =>
+    set((s) => ({
+      streamingThinkingByTask: {
+        ...s.streamingThinkingByTask,
+        [taskId]: mergeGatewayStreamText(s.streamingThinkingByTask[taskId] ?? '', delta),
+      },
+    })),
+
   finalizeStream: (taskId) => {
     let captured: Message | null = null;
     set((s) => {
       const content = s.streamingByTask[taskId];
       if (!content) return s;
+      const thinkingContent = s.streamingThinkingByTask[taskId] || undefined;
       const msg: Message = {
         id: generateId(),
         taskId,
         role: 'assistant',
         content,
+        thinkingContent,
         artifacts: [],
         toolCalls: [],
         timestamp: new Date().toISOString(),
@@ -137,12 +151,15 @@ export const useMessageStore = create<MessageState>((set, get) => ({
       captured = msg;
       const nextStreaming = { ...s.streamingByTask };
       delete nextStreaming[taskId];
+      const nextThinking = { ...s.streamingThinkingByTask };
+      delete nextThinking[taskId];
       return {
         messagesByTask: {
           ...s.messagesByTask,
           [taskId]: [...(s.messagesByTask[taskId] ?? []), msg],
         },
         streamingByTask: nextStreaming,
+        streamingThinkingByTask: nextThinking,
       };
     });
     if (captured) {

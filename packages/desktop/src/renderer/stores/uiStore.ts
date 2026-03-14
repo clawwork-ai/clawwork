@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { AgentInfo, ModelCatalogEntry } from '@clawwork/shared';
 import i18n from '../i18n';
 
 type MainView = 'chat' | 'files' | 'archived';
@@ -48,6 +49,15 @@ interface UiState {
   unreadTaskIds: Set<string>;
   markUnread: (taskId: string) => void;
   clearUnread: (taskId: string) => void;
+
+  /** Available models from Gateway */
+  modelCatalog: ModelCatalogEntry[];
+  setModelCatalog: (models: ModelCatalogEntry[]) => void;
+
+  /** Available agents from Gateway */
+  agentCatalog: AgentInfo[];
+  defaultAgentId: string;
+  setAgentCatalog: (agents: AgentInfo[], defaultId: string) => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -96,4 +106,11 @@ export const useUiStore = create<UiState>((set) => ({
       next.delete(taskId);
       return { unreadTaskIds: next };
     }),
+
+  modelCatalog: [],
+  setModelCatalog: (models) => set({ modelCatalog: models }),
+
+  agentCatalog: [],
+  defaultAgentId: 'main',
+  setAgentCatalog: (agents, defaultId) => set({ agentCatalog: agents, defaultAgentId: defaultId }),
 }));

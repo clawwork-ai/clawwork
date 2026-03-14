@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { PanelRightOpen, RotateCcw, Archive, Plus, Server, ChevronDown } from 'lucide-react'
+import { PanelRightOpen, RotateCcw, Archive, Plus, Server, ChevronDown, Bot, Cpu, ArrowUp, ArrowDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useTaskStore } from '@/stores/taskStore'
 import { useMessageStore, EMPTY_MESSAGES } from '@/stores/messageStore'
 import { useUiStore, type GatewayInfo } from '@/stores/uiStore'
-import { cn, formatRelativeTime } from '@/lib/utils'
+import { cn, formatRelativeTime, formatTokenCount } from '@/lib/utils'
 import { motion as motionPresets } from '@/styles/design-tokens'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -32,23 +32,33 @@ function WelcomeScreen() {
   const { t } = useTranslation()
   const gatewayInfoMap = useUiStore((s) => s.gatewayInfoMap)
   const defaultGatewayId = useUiStore((s) => s.defaultGatewayId)
+  const agentCatalog = useUiStore((s) => s.agentCatalog)
+  const defaultAgentId = useUiStore((s) => s.defaultAgentId)
   const createTask = useTaskStore((s) => s.createTask)
   const gateways = Object.values(gatewayInfoMap)
   const hasMultiple = gateways.length > 1
+  const hasMultipleAgents = agentCatalog.length > 1
   const [selectedGwId, setSelectedGwId] = useState(defaultGatewayId ?? gateways[0]?.id ?? '')
+  const [selectedAgentId, setSelectedAgentId] = useState(defaultAgentId)
 
-  // Sync when defaultGatewayId loads asynchronously
   useEffect(() => {
     if (defaultGatewayId && !selectedGwId) {
       setSelectedGwId(defaultGatewayId)
     }
   }, [defaultGatewayId, selectedGwId])
 
+  useEffect(() => {
+    setSelectedAgentId(defaultAgentId)
+  }, [defaultAgentId])
+
+  const selectedAgent = agentCatalog.find((a) => a.id === selectedAgentId)
   const selectedGw = gatewayInfoMap[selectedGwId]
 
   const handleCreate = useCallback(() => {
-    createTask(hasMultiple ? selectedGwId : undefined)
-  }, [createTask, hasMultiple, selectedGwId])
+    const gwId = hasMultiple ? selectedGwId : undefined
+    const agentId = selectedAgentId !== defaultAgentId ? selectedAgentId : undefined
+    createTask(gwId, agentId)
+  }, [createTask, hasMultiple, selectedGwId, selectedAgentId, defaultAgentId])
 
   return (
     <motion.div
@@ -91,6 +101,39 @@ function WelcomeScreen() {
             </DropdownMenuContent>
           </DropdownMenu>
         )}
+        {hasMultipleAgents && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-1.5 text-sm">
+                {selectedAgent?.identity?.emoji ? (
+                  <span className="text-base leading-none">{selectedAgent.identity.emoji}</span>
+                ) : (
+                  <Bot size={14} />
+                )}
+                <span className="max-w-[120px] truncate">
+                  {selectedAgent?.name ?? selectedAgent?.id ?? t('mainArea.selectAgent')}
+                </span>
+                <ChevronDown size={12} className="opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center">
+              {agentCatalog.map((agent) => (
+                <DropdownMenuItem
+                  key={agent.id}
+                  onClick={() => setSelectedAgentId(agent.id)}
+                  className={cn(agent.id === selectedAgentId && 'font-medium text-[var(--accent)]')}
+                >
+                  {agent.identity?.emoji ? (
+                    <span className="mr-2 text-base leading-none">{agent.identity.emoji}</span>
+                  ) : (
+                    <Bot size={12} className="mr-2 flex-shrink-0" />
+                  )}
+                  {agent.name ?? agent.id}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         <Button variant="soft" onClick={handleCreate} className="gap-2">
           <Plus size={16} />
           {t('common.newTask')}
@@ -117,6 +160,11 @@ function ChatHeader({ onTogglePanel }: { onTogglePanel: () => void }) {
   const gatewayInfoMap = useUiStore((s) => s.gatewayInfoMap)
   const hasMultipleGateways = Object.keys(gatewayInfoMap).length > 1
   const gwInfo = activeTask ? gatewayInfoMap[activeTask.gatewayId] : undefined
+  const agentInfo = useUiStore((s) =>
+    activeTask?.agentId && activeTask.agentId !== 'main'
+      ? s.agentCatalog.find((a) => a.id === activeTask.agentId)
+      : undefined,
+  )
 
   return (
     <header className="titlebar-drag flex items-center justify-between h-12 px-5 border-b border-[var(--border)] flex-shrink-0">
@@ -147,6 +195,63 @@ function ChatHeader({ onTogglePanel }: { onTogglePanel: () => void }) {
                 </TooltipTrigger>
                 <TooltipContent>{gwInfo.name}</TooltipContent>
               </Tooltip>
+            )}
+            {agentInfo && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-muted)]">
+                    {agentInfo.identity?.emoji ? (
+                      <span className="text-sm leading-none">{agentInfo.identity.emoji}</span>
+                    ) : (
+                      <Bot size={10} />
+                    )}
+                    <span className="max-w-[80px] truncate">{agentInfo.name ?? agentInfo.id}</span>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{agentInfo.name ?? agentInfo.id}</TooltipContent>
+              </Tooltip>
+            )}
+            {activeTask?.model && (
+              <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-muted)]">
+                <Cpu size={10} />
+                <span className="max-w-[100px] truncate">{activeTask.model}</span>
+              </span>
+            )}
+            {(activeTask?.inputTokens != null || activeTask?.outputTokens != null) && (
+              <span className="inline-flex items-center gap-0.5 text-xs text-[var(--text-muted)]">
+                {activeTask.inputTokens != null && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-[var(--bg-tertiary)]">
+                        <ArrowUp size={9} />
+                        {formatTokenCount(activeTask.inputTokens)}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>{t('rightPanel.inputTokens')}: {activeTask.inputTokens.toLocaleString()}</TooltipContent>
+                  </Tooltip>
+                )}
+                {activeTask.outputTokens != null && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-[var(--bg-tertiary)]">
+                        <ArrowDown size={9} />
+                        {formatTokenCount(activeTask.outputTokens)}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>{t('rightPanel.outputTokens')}: {activeTask.outputTokens.toLocaleString()}</TooltipContent>
+                  </Tooltip>
+                )}
+                {activeTask.contextTokens != null && activeTask.contextTokens > 0 && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="px-1 py-0.5 rounded bg-[var(--bg-tertiary)]">
+                        ctx {Math.round((activeTask.contextTokens / 200_000) * 100)}%
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>{t('rightPanel.contextUsage')}: {activeTask.contextTokens.toLocaleString()} tokens</TooltipContent>
+                  </Tooltip>
+                )}
+              </span>
             )}
           </>
         ) : (
@@ -181,6 +286,9 @@ function ChatContent() {
   const streamingContent = useMessageStore((s) =>
     activeTaskId ? (s.streamingByTask[activeTaskId] ?? '') : '',
   )
+  const streamingThinkingContent = useMessageStore((s) =>
+    activeTaskId ? (s.streamingThinkingByTask[activeTaskId] ?? '') : '',
+  )
   const highlightedId = useMessageStore((s) => s.highlightedMessageId)
   const setHighlightedMessage = useMessageStore((s) => s.setHighlightedMessage)
   const isProcessing = useMessageStore((s) =>
@@ -202,14 +310,14 @@ function ChatContent() {
     if (!stickToBottom.current) return
     const el = viewportRef.current
     if (el) el.scrollTop = el.scrollHeight
-  }, [messages.length, streamingContent, isProcessing])
+  }, [messages.length, streamingContent, streamingThinkingContent, isProcessing])
 
   return (
     <>
       <ScrollArea viewportRef={viewportRef} className="flex-1 px-6 py-4" onScrollCapture={handleScroll}>
         <div className="max-w-3xl mx-auto space-y-1">
           {!activeTask && <WelcomeScreen />}
-          {activeTask && messages.length === 0 && !streamingContent && <WelcomeScreen />}
+          {activeTask && messages.length === 0 && !streamingContent && !streamingThinkingContent && <WelcomeScreen />}
           {messages.map((msg) => (
             <ChatMessage
               key={msg.id}
@@ -219,9 +327,9 @@ function ChatContent() {
               onImageClick={setLightboxSrc}
             />
           ))}
-          {streamingContent && <StreamingMessage content={streamingContent} />}
+          {(streamingContent || streamingThinkingContent) && <StreamingMessage content={streamingContent} thinkingContent={streamingThinkingContent || undefined} />}
           <AnimatePresence>
-            {isProcessing && !streamingContent && <ThinkingIndicator />}
+            {isProcessing && !streamingContent && !streamingThinkingContent && <ThinkingIndicator />}
           </AnimatePresence>
         </div>
       </ScrollArea>

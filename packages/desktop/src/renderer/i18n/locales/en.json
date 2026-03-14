@@ -24,7 +24,9 @@
     "welcomeDesc2": "Files produced along the way are auto-archived.",
     "starOnGithub": "Enjoying ClawWork? Give us a star on GitHub",
     "toggleContextPanel": "Toggle context panel",
-    "selectGateway": "Select server"
+    "selectGateway": "Select server",
+    "selectAgent": "Select agent",
+    "defaultAgent": "Default"
   },
   "settings": {
     "appearance": "Appearance",
@@ -85,7 +87,10 @@
     "artifacts": "Artifacts",
     "noProgress": "No progress info yet",
     "xOfYCompleted": "{{done}}/{{total}} completed",
-    "noCommits": "No commits yet"
+    "noCommits": "No commits yet",
+    "inputTokens": "Input",
+    "outputTokens": "Output",
+    "contextUsage": "Context"
   },
   "fileBrowser": {
     "searchFiles": "Search files\u2026",
@@ -131,12 +136,19 @@
     "createTaskFirst": "Create a task first\u2026",
     "poweredBy": "AI can make mistakes. Check important info.",
     "offlineHint": "Offline \u2014 browse past tasks and files",
-    "image": "Image"
+    "image": "Image",
+    "model": "Model",
+    "thinking": "Thinking",
+    "thinkingOff": "Off",
+    "thinkingLow": "Low",
+    "thinkingMedium": "Medium",
+    "thinkingHigh": "High"
   },
   "chatMessage": {
     "copyMessage": "Copy message",
     "copyCode": "Copy code",
-    "copied": "Copied"
+    "copied": "Copied",
+    "thinkingProcess": "Thinking process"
   },
   "dialog": {
     "selectWorkspaceDir": "Select Workspace Directory"
