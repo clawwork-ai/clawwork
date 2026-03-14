@@ -1,7 +1,6 @@
 {
   "name": "clawwork",
   "private": true,
-  "version": "0.1.0",
   "description": "OpenClaw desktop client with structured task management",
   "scripts": {
     "postinstall": "node scripts/ensure-electron.mjs",

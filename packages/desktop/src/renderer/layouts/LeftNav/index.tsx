@@ -30,6 +30,7 @@ export default function LeftNav() {
   const settingsOpen = useUiStore((s) => s.settingsOpen)
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen)
   const gwStatusMap = useUiStore((s) => s.gatewayStatusMap)
+  const hasUpdate = useUiStore((s) => s.hasUpdate)
   const agentCatalog = useUiStore((s) => s.agentCatalog)
   const hasMultipleAgents = agentCatalog.length > 1
 
@@ -204,16 +205,21 @@ export default function LeftNav() {
               <button
                 onClick={() => setSettingsOpen(!settingsOpen)}
                 className={cn(
-                  'titlebar-no-drag flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors',
+                  'titlebar-no-drag relative flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors',
                   settingsOpen
                     ? 'bg-[var(--accent-dim)] text-[var(--text-primary)]'
                     : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]',
                 )}
               >
                 <Settings size={16} className="opacity-60" /> {t('common.settings')}
+                {hasUpdate && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[var(--accent)]" />
+                )}
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right">{t('leftNav.appSettings')}</TooltipContent>
+            <TooltipContent side="right">
+              {hasUpdate ? t('leftNav.updateAvailable') : t('leftNav.appSettings')}
+            </TooltipContent>
           </Tooltip>
           <div className="ml-auto">
             <ConnectionStatus gatewayStatus={aggregatedGwStatus} />

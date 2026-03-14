@@ -50,6 +50,10 @@ interface UiState {
   markUnread: (taskId: string) => void;
   clearUnread: (taskId: string) => void;
 
+  /** Whether a newer version is available (set by startup update check) */
+  hasUpdate: boolean;
+  setHasUpdate: (has: boolean) => void;
+
   /** Available models from Gateway */
   modelCatalog: ModelCatalogEntry[];
   setModelCatalog: (models: ModelCatalogEntry[]) => void;
@@ -106,6 +110,9 @@ export const useUiStore = create<UiState>((set) => ({
       next.delete(taskId);
       return { unreadTaskIds: next };
     }),
+
+  hasUpdate: false,
+  setHasUpdate: (has) => set({ hasUpdate: has }),
 
   modelCatalog: [],
   setModelCatalog: (models) => set({ modelCatalog: models }),

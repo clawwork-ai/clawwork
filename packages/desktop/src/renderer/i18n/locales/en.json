@@ -16,7 +16,8 @@
     "searchTasks": "Search tasks\u2026",
     "emptyHint": "Click \"New Task\" to start",
     "appSettings": "App Settings",
-    "archivedChats": "Archived Chats"
+    "archivedChats": "Archived Chats",
+    "updateAvailable": "Update available"
   },
   "mainArea": {
     "welcomeSubtitle": "AI-powered task execution",
@@ -62,7 +63,12 @@
     "about": "About",
     "githubStar": "Star us on GitHub ⭐",
     "submitIssue": "Submit Issue / Feedback",
-    "version": "Version"
+    "version": "Version",
+    "checkForUpdates": "Check for Updates",
+    "alreadyLatest": "You are on the latest version",
+    "updateCheckFailed": "Failed to check for updates",
+    "newVersionAvailable": "New version {{version}} available",
+    "homebrewUpgrade": "If installed via Homebrew, run:"
   },
   "setup": {
     "welcome": "Welcome to ClawWork",

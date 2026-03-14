@@ -53,6 +53,13 @@ interface AppSettings {
   tlsFingerprint?: string;
 }
 
+interface UpdateCheckResult {
+  currentVersion: string;
+  latestVersion: string;
+  hasUpdate: boolean;
+  releaseUrl: string;
+}
+
 interface SearchResult {
   type: 'task' | 'message' | 'artifact';
   id: string;
@@ -178,6 +185,9 @@ export interface ClawWorkAPI {
   updateGateway: (gatewayId: string, partial: Partial<GatewayServerConfig>) => Promise<IpcResult>;
   setDefaultGateway: (gatewayId: string) => Promise<IpcResult>;
   testGateway: (url: string, auth: { token?: string; password?: string }) => Promise<IpcResult>;
+
+  // Updates
+  checkForUpdates: () => Promise<UpdateCheckResult>;
 
   // Search
   globalSearch: (query: string) => Promise<SearchResponse>;

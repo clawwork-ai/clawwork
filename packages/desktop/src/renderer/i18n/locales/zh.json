@@ -16,7 +16,8 @@
     "searchTasks": "搜索任务…",
     "emptyHint": "点击「新任务」开始",
     "appSettings": "应用设置",
-    "archivedChats": "归档对话"
+    "archivedChats": "归档对话",
+    "updateAvailable": "有新版本可用"
   },
   "mainArea": {
     "welcomeSubtitle": "AI 驱动的任务执行",
@@ -62,7 +63,12 @@
     "about": "关于",
     "githubStar": "在 GitHub 上给我们 Star ⭐",
     "submitIssue": "提交 Issue / 反馈问题",
-    "version": "版本"
+    "version": "版本",
+    "checkForUpdates": "检查更新",
+    "alreadyLatest": "已是最新版本",
+    "updateCheckFailed": "检查更新失败",
+    "newVersionAvailable": "发现新版本 {{version}}",
+    "homebrewUpgrade": "如通过 Homebrew 安装，请执行："
   },
   "setup": {
     "welcome": "欢迎使用 ClawWork",

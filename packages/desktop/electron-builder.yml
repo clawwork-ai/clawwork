@@ -1,5 +1,6 @@
 appId: com.clawwork.app
 productName: ClawWork
+buildVersion: "${env.BUILD_VERSION}"
 directories:
   buildResources: build
   output: dist

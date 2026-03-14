@@ -9,6 +9,7 @@ import Settings from './layouts/Settings'
 import { useUiStore } from './stores/uiStore'
 import { useGatewayEventDispatcher } from './hooks/useGatewayDispatcher'
 import { useTheme } from './hooks/useTheme'
+import { useUpdateCheck } from './hooks/useUpdateCheck'
 import { cn } from '@/lib/utils'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
@@ -25,6 +26,7 @@ export default function App() {
 
   useGatewayEventDispatcher()
   useTheme()
+  useUpdateCheck()
 
   useEffect(() => {
     window.clawwork.isWorkspaceConfigured().then((configured) => {

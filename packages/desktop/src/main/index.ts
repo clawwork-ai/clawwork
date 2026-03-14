@@ -9,6 +9,7 @@ import { registerWorkspaceHandlers } from './ipc/workspace-handlers.js';
 import { registerSettingsHandlers } from './ipc/settings-handlers.js';
 import { registerSearchHandlers } from './ipc/search-handlers.js';
 import { registerDataHandlers } from './ipc/data-handlers.js';
+import { registerUpdateHandlers } from './ipc/update-handlers.js';
 import { getWorkspacePath, readConfig } from './workspace/config.js';
 import { initDatabase, closeDatabase } from './db/index.js';
 
@@ -89,6 +90,7 @@ app.whenReady().then(() => {
   registerSettingsHandlers();
   registerSearchHandlers();
   registerDataHandlers();
+  registerUpdateHandlers();
 
   const wsPath = getWorkspacePath();
   if (wsPath) {

@@ -26,6 +26,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Verify tag/version consistency
+        run: |
+          DESKTOP_VERSION=$(node -p "require('./packages/desktop/package.json').version")
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$DESKTOP_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::Version mismatch: package.json=${DESKTOP_VERSION}, tag=${TAG_VERSION}"
+            exit 1
+          fi
+          echo "Version check passed: ${DESKTOP_VERSION}"
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -47,6 +57,7 @@ jobs:
         run: pnpm --filter @clawwork/desktop exec electron-builder ${{ matrix.build_args }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BUILD_VERSION: ${{ github.run_number }}
 
       - name: Upload artifacts to release
         uses: softprops/action-gh-release@v2

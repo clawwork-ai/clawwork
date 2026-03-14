@@ -1,4 +1,5 @@
 import WebSocket from 'ws';
+import { app } from 'electron';
 import { randomUUID } from 'crypto';
 import {
   GATEWAY_WS_PORT,
@@ -197,7 +198,7 @@ export class GatewayClient {
       client: {
         id: 'gateway-client',
         displayName: 'ClawWork Desktop',
-        version: '0.1.0',
+        version: app.getVersion(),
         platform: process.platform,
         mode: 'backend',
       },

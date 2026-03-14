@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   X, Moon, Sun, Globe, Star, Bug, Plus, Trash2, Pencil,
-  CheckCircle2, XCircle, Loader2, Server, Crown,
+  CheckCircle2, XCircle, Loader2, Server, Crown, RefreshCw,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -11,6 +11,13 @@ import { motion as motionPresets } from '@/styles/design-tokens'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { useUiStore, type Language, type GatewayConnectionStatus } from '@/stores/uiStore'
+
+interface UpdateCheckResult {
+  currentVersion: string
+  latestVersion: string
+  hasUpdate: boolean
+  releaseUrl: string
+}
 
 interface SettingsProps {
   onClose: () => void
@@ -148,6 +155,8 @@ export default function Settings({ onClose }: SettingsProps) {
   const [gateways, setGateways] = useState<GatewayServerConfig[]>([])
   const [defaultGwId, setDefaultGwId] = useState<string | null>(null)
   const [workspacePath, setWorkspacePath] = useState('')
+  const [updateInfo, setUpdateInfo] = useState<UpdateCheckResult | null>(null)
+  const [checkingUpdate, setCheckingUpdate] = useState(false)
 
   // Form state
   const [showForm, setShowForm] = useState(false)
@@ -172,6 +181,25 @@ export default function Settings({ onClose }: SettingsProps) {
   }, [t, setGatewayInfoMap])
 
   useEffect(() => { loadGateways() }, [loadGateways])
+
+  useEffect(() => {
+    window.clawwork.checkForUpdates().then(setUpdateInfo).catch(() => {})
+  }, [])
+
+  const handleCheckForUpdates = useCallback(async () => {
+    setCheckingUpdate(true)
+    try {
+      const result = await window.clawwork.checkForUpdates()
+      setUpdateInfo(result)
+      if (!result.hasUpdate) {
+        toast.success(t('settings.alreadyLatest'))
+      }
+    } catch {
+      toast.error(t('settings.updateCheckFailed'))
+    } finally {
+      setCheckingUpdate(false)
+    }
+  }, [t])
 
   const handleThemeToggle = useCallback((next: 'dark' | 'light') => {
     setTheme(next)
@@ -478,9 +506,42 @@ export default function Settings({ onClose }: SettingsProps) {
           <div className={cn(cardClass, 'space-y-4')}>
             <div className="flex items-center justify-between">
               <span className="text-sm text-[var(--text-secondary)]">{t('settings.version')}</span>
-              <span className="text-sm text-[var(--text-primary)] font-mono">v0.1.0</span>
+              <span className="text-sm text-[var(--text-primary)] font-mono">
+                v{updateInfo?.currentVersion ?? '0.0.3'}
+              </span>
             </div>
+
+            {updateInfo?.hasUpdate && (
+              <div className={cn(
+                'rounded-lg px-4 py-3',
+                'bg-[var(--accent-soft)] border border-[var(--accent)]/30',
+              )}>
+                <p className="text-sm text-[var(--accent)] font-medium mb-1">
+                  {t('settings.newVersionAvailable', { version: updateInfo.latestVersion })}
+                </p>
+                <p className="text-xs text-[var(--text-secondary)]">
+                  {t('settings.homebrewUpgrade')}
+                  {' '}
+                  <code className="font-mono bg-[var(--bg-tertiary)] px-1 py-0.5 rounded text-[var(--text-primary)]">
+                    brew upgrade --cask clawwork
+                  </code>
+                </p>
+              </div>
+            )}
+
             <div className="flex flex-col gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCheckForUpdates}
+                disabled={checkingUpdate}
+                className="titlebar-no-drag gap-1.5 w-full justify-center"
+              >
+                {checkingUpdate
+                  ? <Loader2 size={14} className="animate-spin" />
+                  : <RefreshCw size={14} />}
+                {t('settings.checkForUpdates')}
+              </Button>
               <a
                 href="https://github.com/clawwork-ai/clawwork"
                 target="_blank"

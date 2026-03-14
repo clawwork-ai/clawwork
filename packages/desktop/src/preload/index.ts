@@ -89,6 +89,9 @@ function buildApi(): ClawWorkAPI {
     testGateway: (url: string, auth: { token?: string; password?: string }) =>
       ipcRenderer.invoke('settings:test-gateway', url, auth),
 
+    checkForUpdates: () =>
+      ipcRenderer.invoke('app:check-for-updates'),
+
     globalSearch: (query: string) =>
       ipcRenderer.invoke('search:global', query),
 
