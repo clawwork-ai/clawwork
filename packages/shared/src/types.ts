@@ -51,6 +51,34 @@ export interface Task {
   gatewayId: string;
 }
 
+export interface TaskRuntimeInfo {
+  sessionId: string | null;
+  modelProvider: string | null;
+  model: string | null;
+  authProfileOverride: string | null;
+  thinkingLevel: string | null;
+  reasoningLevel: string | null;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  totalTokens: number | null;
+  contextTokens: number | null;
+  contextPercent: number | null;
+}
+
+export interface ModelOption {
+  id: string;
+  label: string;
+  provider: string | null;
+  model: string | null;
+}
+
+export interface MessageRuntimeInfo {
+  model: string | null;
+  modelProvider: string | null;
+  thinkingLevel: string | null;
+  reasoningLevel: string | null;
+}
+
 /** Image attachment stored with a user message for UI preview */
 export interface MessageImageAttachment {
   fileName: string;
