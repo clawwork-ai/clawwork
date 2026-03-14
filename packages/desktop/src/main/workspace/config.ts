@@ -21,7 +21,7 @@ export interface AppConfig {
   language?: 'en' | 'zh';
   gateways: GatewayServerConfig[];
   defaultGatewayId?: string;
-  // Legacy fields kept for migration detection
+  sendShortcut?: 'enter' | 'cmdEnter';
   gatewayUrl?: string;
   bootstrapToken?: string;
   password?: string;

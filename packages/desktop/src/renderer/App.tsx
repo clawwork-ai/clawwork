@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Toaster } from 'sonner'
 import LeftNav from './layouts/LeftNav'
@@ -7,6 +7,7 @@ import RightPanel from './layouts/RightPanel'
 import Setup from './layouts/Setup'
 import Settings from './layouts/Settings'
 import { useUiStore } from './stores/uiStore'
+import { useTaskStore } from './stores/taskStore'
 import { useGatewayEventDispatcher } from './hooks/useGatewayDispatcher'
 import { useTheme } from './hooks/useTheme'
 import { useUpdateCheck } from './hooks/useUpdateCheck'
@@ -23,6 +24,9 @@ export default function App() {
   const settingsOpen = useUiStore((s) => s.settingsOpen)
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen)
   const theme = useUiStore((s) => s.theme)
+  const setMainView = useUiStore((s) => s.setMainView)
+  const focusSearch = useUiStore((s) => s.focusSearch)
+  const createTask = useTaskStore((s) => s.createTask)
 
   useGatewayEventDispatcher()
   useTheme()
@@ -37,6 +41,42 @@ export default function App() {
       }
     })
   }, [])
+
+  useEffect(() => {
+    if (!ready) return
+    window.clawwork.getSettings().then((settings) => {
+      if (settings?.sendShortcut) {
+        useUiStore.setState({ sendShortcut: settings.sendShortcut })
+      }
+    })
+  }, [ready])
+
+  const handleGlobalKeyDown = useCallback((e: KeyboardEvent) => {
+    const meta = e.metaKey || e.ctrlKey
+    if (!meta) return
+
+    if (e.shiftKey && e.code === 'KeyO') {
+      e.preventDefault()
+      createTask()
+      return
+    }
+
+    if (e.shiftKey && e.code === 'KeyF') {
+      e.preventDefault()
+      setMainView('files')
+      return
+    }
+
+    if (!e.shiftKey && e.code === 'KeyK') {
+      e.preventDefault()
+      focusSearch()
+    }
+  }, [createTask, setMainView, focusSearch])
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleGlobalKeyDown)
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown)
+  }, [handleGlobalKeyDown])
 
   if (needsSetup) {
     return (

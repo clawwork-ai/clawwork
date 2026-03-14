@@ -8,6 +8,8 @@ type Theme = 'dark' | 'light';
 
 export type Language = 'en' | 'zh';
 
+export type SendShortcut = 'enter' | 'cmdEnter';
+
 export type GatewayConnectionStatus = 'connected' | 'connecting' | 'disconnected';
 
 export interface GatewayInfo {
@@ -62,6 +64,12 @@ interface UiState {
   agentCatalog: AgentInfo[];
   defaultAgentId: string;
   setAgentCatalog: (agents: AgentInfo[], defaultId: string) => void;
+
+  sendShortcut: SendShortcut;
+  setSendShortcut: (shortcut: SendShortcut) => void;
+
+  searchFocusTrigger: number;
+  focusSearch: () => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -120,4 +128,13 @@ export const useUiStore = create<UiState>((set) => ({
   agentCatalog: [],
   defaultAgentId: 'main',
   setAgentCatalog: (agents, defaultId) => set({ agentCatalog: agents, defaultAgentId: defaultId }),
+
+  sendShortcut: 'enter',
+  setSendShortcut: (shortcut) => {
+    set({ sendShortcut: shortcut });
+    window.clawwork.updateSettings({ sendShortcut: shortcut });
+  },
+
+  searchFocusTrigger: 0,
+  focusSearch: () => set((s) => ({ searchFocusTrigger: s.searchFocusTrigger + 1 })),
 }));

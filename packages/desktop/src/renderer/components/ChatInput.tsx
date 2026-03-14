@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Paperclip, X, ChevronDown, Cpu, Brain } from 'lucide-react';
 import type { MessageImageAttachment } from '@clawwork/shared';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, modKey } from '@/lib/utils';
 import { motion as motionPresets } from '@/styles/design-tokens';
 import { Button } from '@/components/ui/button';
 import {
@@ -77,6 +77,8 @@ export default function ChatInput() {
   const [slashQuery, setSlashQuery] = useState('');
   const [slashIndex, setSlashIndex] = useState(0);
   const slashCommands = filterSlashCommands(slashQuery);
+
+  const sendShortcut = useUiStore((s) => s.sendShortcut);
 
   /** Evaluate the current textarea value and cursor position to determine
    *  whether to show the slash command menu. */
@@ -247,13 +249,18 @@ export default function ChatInput() {
         }
       }
 
-      // ── Normal send ───────────────────────────────────────────────────────────
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        handleSend();
+      // ── Send ──────────────────────────────────────────────────────────────────
+      if (e.key === 'Enter') {
+        const isCmdEnterMode = sendShortcut === 'cmdEnter';
+        const meta = e.metaKey || e.ctrlKey;
+        const shouldSend = isCmdEnterMode ? (meta && !e.shiftKey) : (!e.shiftKey && !meta);
+        if (shouldSend) {
+          e.preventDefault();
+          handleSend();
+        }
       }
     },
-    [slashMenuVisible, slashCommands, slashIndex, commitSlashCommand, handleSend],
+    [slashMenuVisible, slashCommands, slashIndex, commitSlashCommand, handleSend, sendShortcut],
   );
 
   const handleInput = useCallback(() => {
@@ -491,7 +498,9 @@ export default function ChatInput() {
         <p className="text-xs text-[var(--text-muted)] text-center mt-2.5 tracking-wide">
           {isOffline
             ? t('chatInput.offlineHint')
-            : t('chatInput.poweredBy')}
+            : sendShortcut === 'cmdEnter'
+              ? t('chatInput.poweredBy') + ' · ' + t('chatInput.toSend', { mod: modKey })
+              : t('chatInput.poweredBy')}
         </p>
       </div>
     </div>

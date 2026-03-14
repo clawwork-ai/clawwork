@@ -33,6 +33,7 @@ export default function LeftNav() {
   const hasUpdate = useUiStore((s) => s.hasUpdate)
   const agentCatalog = useUiStore((s) => s.agentCatalog)
   const hasMultipleAgents = agentCatalog.length > 1
+  const searchFocusTrigger = useUiStore((s) => s.searchFocusTrigger)
 
   // Aggregate: if any gateway connected → connected; any connecting → connecting; else disconnected
   const gwStatusValues = Object.values(gwStatusMap)
@@ -46,6 +47,13 @@ export default function LeftNav() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (searchFocusTrigger === 0) return
+    searchInputRef.current?.focus()
+    searchInputRef.current?.select()
+  }, [searchFocusTrigger])
 
   useEffect(() => {
     clearTimeout(timerRef.current)
@@ -114,6 +122,7 @@ export default function LeftNav() {
         <div className="titlebar-no-drag relative">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
           <input
+            ref={searchInputRef}
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

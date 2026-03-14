@@ -6,11 +6,11 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
+import { cn, modKey } from '@/lib/utils'
 import { motion as motionPresets } from '@/styles/design-tokens'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
-import { useUiStore, type Language, type GatewayConnectionStatus } from '@/stores/uiStore'
+import { useUiStore, type Language, type GatewayConnectionStatus, type SendShortcut } from '@/stores/uiStore'
 
 interface UpdateCheckResult {
   currentVersion: string
@@ -148,6 +148,8 @@ export default function Settings({ onClose }: SettingsProps) {
   const setTheme = useUiStore((s) => s.setTheme)
   const language = useUiStore((s) => s.language)
   const setLanguage = useUiStore((s) => s.setLanguage)
+  const sendShortcut = useUiStore((s) => s.sendShortcut)
+  const setSendShortcut = useUiStore((s) => s.setSendShortcut)
   const gatewayStatusMap = useUiStore((s) => s.gatewayStatusMap)
   const setDefaultGatewayId = useUiStore((s) => s.setDefaultGatewayId)
   const setGatewayInfoMap = useUiStore((s) => s.setGatewayInfoMap)
@@ -205,6 +207,12 @@ export default function Settings({ onClose }: SettingsProps) {
     setTheme(next)
     toast.success(t('settings.themeUpdated'))
   }, [setTheme, t])
+
+  const handleShortcutChange = useCallback((next: SendShortcut) => {
+    if (next === sendShortcut) return
+    setSendShortcut(next)
+    toast.success(t('settings.shortcutUpdated'))
+  }, [sendShortcut, setSendShortcut, t])
 
   const openAddForm = useCallback(() => {
     setEditingId(null)
@@ -362,6 +370,25 @@ export default function Settings({ onClose }: SettingsProps) {
                     )}
                   >
                     {lang.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-[var(--text-primary)]">{t('settings.sendShortcut')}</span>
+              <div className="flex rounded-lg border border-[var(--border)] overflow-hidden">
+                {(['enter', 'cmdEnter'] as const).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => handleShortcutChange(s)}
+                    className={cn(
+                      'px-3.5 py-1.5 text-sm transition-colors',
+                      sendShortcut === s
+                        ? 'bg-[var(--accent)] text-[var(--bg-primary)] font-medium'
+                        : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]',
+                    )}
+                  >
+                    {s === 'enter' ? t('settings.sendEnter') : t('settings.sendCmdEnter', { mod: modKey })}
                   </button>
                 ))}
               </div>

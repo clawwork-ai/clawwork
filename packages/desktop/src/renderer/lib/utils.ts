@@ -39,3 +39,7 @@ export function formatTokenCount(tokens: number): string {
   if (tokens < 100_000) return `${(tokens / 1000).toFixed(1)}k`
   return `${(tokens / 1000).toFixed(0)}k`
 }
+
+export const isMac = navigator.platform.toUpperCase().includes('MAC')
+
+export const modKey = isMac ? '⌘' : 'Ctrl'
