@@ -8,6 +8,17 @@ import { useTaskStore } from '../stores/taskStore';
 import { useUiStore } from '../stores/uiStore';
 import { hydrateFromLocal, syncFromGateway } from '../lib/session-sync';
 
+function debugEvent(event: string, data: Record<string, unknown>, extra?: { traceId?: string; feature?: string }): void {
+  console.debug(`[debug] ${event}`, data);
+  window.clawwork.reportDebugEvent({
+    domain: 'renderer',
+    event,
+    traceId: extra?.traceId,
+    feature: extra?.feature,
+    data,
+  });
+}
+
 interface ChatContentBlock {
   type: string;
   text?: string;
@@ -60,7 +71,16 @@ export function useGatewayEventDispatcher(): void {
   activeTaskIdRef.current = activeTaskId;
 
   useEffect(() => {
+    const removeDebug = window.clawwork.onDebugEvent((event) => {
+      console.debug(`[main-debug] ${event.event}`, event);
+    });
+
     const handler = (data: { event: string; payload: Record<string, unknown>; gatewayId: string }): void => {
+      debugEvent('renderer.gateway.event.received', {
+        gatewayId: data.gatewayId,
+        event: data.event,
+        payloadKeys: Object.keys(data.payload ?? {}),
+      });
       if (data.event === 'chat') {
         handleChatEvent(data.payload as unknown as ChatEventPayload);
       } else if (data.event === 'agent') {
@@ -70,10 +90,16 @@ export function useGatewayEventDispatcher(): void {
 
     function handleChatEvent(payload: ChatEventPayload): void {
       const { sessionKey, state } = payload;
-      if (!sessionKey) return;
+      if (!sessionKey) {
+        debugEvent('renderer.event.dropped.missing_session', { state });
+        return;
+      }
 
       const taskId = parseTaskIdFromSessionKey(sessionKey);
-      if (!taskId) return;
+      if (!taskId) {
+        debugEvent('renderer.event.dropped.invalid_task', { sessionKey, state });
+        return;
+      }
 
       if (taskId !== activeTaskIdRef.current) {
         useUiStore.getState().markUnread(taskId);
@@ -87,6 +113,7 @@ export function useGatewayEventDispatcher(): void {
         if (text) {
           store.setProcessing(taskId, false);
           store.appendStreamDelta(taskId, text);
+          debugEvent('renderer.chat.delta.applied', { taskId, sessionKey, chars: text.length });
         }
         if (thinking) {
           store.appendThinkingDelta(taskId, thinking);
@@ -104,18 +131,21 @@ export function useGatewayEventDispatcher(): void {
         if (thinking) {
           store.appendThinkingDelta(taskId, thinking);
         }
+        debugEvent('renderer.chat.final.received', { taskId, sessionKey, chars: text.length });
         // Extract and attach any toolCall blocks before finalizing
         const toolCalls = extractToolCalls(payload);
         for (const tc of toolCalls) {
           store.upsertToolCall(taskId, tc);
         }
         store.finalizeStream(taskId);
+        debugEvent('renderer.chat.finalized', { taskId, sessionKey });
         autoTitleIfNeeded(taskId);
         // Refresh session metadata to pick up token counts
         refreshSessionMetadata(sessionKey);
       } else if (state === 'error' || state === 'aborted') {
         store.setProcessing(taskId, false);
         store.finalizeStream(taskId);
+        debugEvent('renderer.chat.terminated', { taskId, sessionKey, state });
         if (state === 'error') {
           const errText = extractText(payload) || i18n.t('errors.requestFailed');
           store.addMessage(taskId, 'system', errText);
@@ -125,10 +155,16 @@ export function useGatewayEventDispatcher(): void {
 
     function handleAgentEvent(payload: AgentToolEvent): void {
       const { sessionKey, stream, data } = payload;
-      if (stream !== 'tool' || !data || !sessionKey) return;
+      if (stream !== 'tool' || !data || !sessionKey) {
+        debugEvent('renderer.agent.dropped.invalid_payload', { stream, hasData: Boolean(data), hasSessionKey: Boolean(sessionKey) });
+        return;
+      }
 
       const taskId = parseTaskIdFromSessionKey(sessionKey);
-      if (!taskId) return;
+      if (!taskId) {
+        debugEvent('renderer.agent.dropped.invalid_task', { sessionKey, stream });
+        return;
+      }
 
       if (!data.name || !data.toolCallId) return;
 
@@ -164,10 +200,14 @@ export function useGatewayEventDispatcher(): void {
       if (!tc.startedAt) tc.startedAt = new Date().toISOString();
 
       store.upsertToolCall(taskId, tc);
+      debugEvent('renderer.toolcall.upserted', { taskId, sessionKey, toolCallId: tc.id, status: tc.status, name: tc.name });
     }
 
     const removeGatewayEvent = window.clawwork.onGatewayEvent(handler);
-    return removeGatewayEvent;
+    return () => {
+      removeGatewayEvent();
+      removeDebug();
+    };
   }, []);
 
   // Hydrate tasks + messages from local SQLite on mount

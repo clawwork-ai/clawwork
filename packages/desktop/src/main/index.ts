@@ -3,6 +3,7 @@ import { join } from 'path';
 import { writeFileSync } from 'fs';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { initAllGateways, destroyAllGateways, rebindAllWindows } from './ws/index.js';
+import { initDebugLogger, getDebugLogger } from './debug/index.js';
 import { registerWsHandlers } from './ipc/ws-handlers.js';
 import { registerArtifactHandlers } from './ipc/artifact-handlers.js';
 import { registerWorkspaceHandlers } from './ipc/workspace-handlers.js';
@@ -10,6 +11,7 @@ import { registerSettingsHandlers } from './ipc/settings-handlers.js';
 import { registerSearchHandlers } from './ipc/search-handlers.js';
 import { registerDataHandlers } from './ipc/data-handlers.js';
 import { registerUpdateHandlers } from './ipc/update-handlers.js';
+import { registerDebugHandlers } from './ipc/debug-handlers.js';
 import { getWorkspacePath, readConfig } from './workspace/config.js';
 import { initDatabase, closeDatabase } from './db/index.js';
 
@@ -22,7 +24,11 @@ const SCREENSHOT_PATH = '/tmp/clawwork-screenshot.png';
 async function captureScreenshot(win: BrowserWindow): Promise<string> {
   const image = await win.webContents.capturePage();
   writeFileSync(SCREENSHOT_PATH, image.toPNG());
-  console.log(`[screenshot] saved to ${SCREENSHOT_PATH}`);
+  getDebugLogger().info({
+    domain: 'app',
+    event: 'app.screenshot.saved',
+    data: { path: SCREENSHOT_PATH },
+  });
   return SCREENSHOT_PATH;
 }
 
@@ -44,6 +50,7 @@ function setupDevScreenshot(win: BrowserWindow): void {
 }
 
 function createWindow(): BrowserWindow {
+  getDebugLogger().info({ domain: 'app', event: 'app.window.create' });
   const mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
@@ -78,6 +85,8 @@ function createWindow(): BrowserWindow {
 }
 
 app.whenReady().then(() => {
+  initDebugLogger(join(app.getPath('userData'), 'debug'));
+  getDebugLogger().info({ domain: 'app', event: 'app.start', data: { userData: app.getPath('userData') } });
   electronApp.setAppUserModelId('com.clawwork.app');
 
   app.on('browser-window-created', (_, window) => {
@@ -91,10 +100,24 @@ app.whenReady().then(() => {
   registerSearchHandlers();
   registerDataHandlers();
   registerUpdateHandlers();
+  registerDebugHandlers();
 
   const wsPath = getWorkspacePath();
   if (wsPath) {
-    try { initDatabase(wsPath); } catch (e) { console.error('[startup] DB init failed:', e); }
+    getDebugLogger().info({ domain: 'workspace', event: 'workspace.detected', data: { workspacePath: wsPath } });
+    try {
+      getDebugLogger().info({ domain: 'db', event: 'db.init.start', data: { workspacePath: wsPath } });
+      initDatabase(wsPath);
+      getDebugLogger().info({ domain: 'db', event: 'db.init.ok', data: { workspacePath: wsPath } });
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e));
+      getDebugLogger().error({
+        domain: 'db',
+        event: 'db.init.failed',
+        data: { workspacePath: wsPath },
+        error: { name: err.name, message: err.message, stack: err.stack },
+      });
+    }
   }
 
   const mainWindow = createWindow();
@@ -116,6 +139,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
+  getDebugLogger().info({ domain: 'app', event: 'app.before-quit' });
   globalShortcut.unregisterAll();
   destroyAllGateways();
   closeDatabase();

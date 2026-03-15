@@ -39,6 +39,15 @@ function buildApi(): ClawWorkAPI {
       ipcRenderer.on('gateway-status', listener);
       return () => { ipcRenderer.removeListener('gateway-status', listener); };
     },
+    onDebugEvent: (callback) => {
+      const listener = (_event: Electron.IpcRendererEvent, event: unknown): void => {
+        callback(event as { ts: string; level: 'debug' | 'info' | 'warn' | 'error'; domain: string; event: string; data?: Record<string, unknown> });
+      };
+      ipcRenderer.on('debug-event', listener);
+      return () => { ipcRenderer.removeListener('debug-event', listener); };
+    },
+    exportDebugBundle: (filter) => ipcRenderer.invoke('debug:export-bundle', filter),
+    reportDebugEvent: (event) => ipcRenderer.send('debug:renderer-event', event),
 
     loadTasks: () =>
       ipcRenderer.invoke('data:list-tasks'),

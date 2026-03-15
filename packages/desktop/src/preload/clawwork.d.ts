@@ -22,6 +22,23 @@ interface GatewayStatusEvent {
   error?: string;
 }
 
+interface DebugEvent {
+  ts: string;
+  level: 'debug' | 'info' | 'warn' | 'error';
+  domain: string;
+  event: string;
+  traceId?: string;
+  feature?: string;
+  message?: string;
+  gatewayId?: string;
+  sessionKey?: string;
+  taskId?: string;
+  requestId?: string;
+  durationMs?: number;
+  error?: { message: string; code?: string; stack?: string };
+  data?: Record<string, unknown>;
+}
+
 export interface GatewayServerConfig {
   id: string;
   name: string;
@@ -149,6 +166,9 @@ export interface ClawWorkAPI {
   // Push events from main process
   onGatewayEvent: (callback: (data: GatewayEvent) => void) => (() => void);
   onGatewayStatus: (callback: (status: GatewayStatusEvent) => void) => (() => void);
+  onDebugEvent: (callback: (event: DebugEvent) => void) => (() => void);
+  exportDebugBundle: (filter?: { gatewayId?: string; sessionKey?: string; taskId?: string; limit?: number }) => Promise<{ ok: boolean; path?: string; eventCount?: number; error?: string }>;
+  reportDebugEvent: (event: { domain: string; event: string; traceId?: string; feature?: string; data?: Record<string, unknown> }) => void;
   removeAllListeners: (channel: string) => void;
 
   // Data persistence

@@ -3,6 +3,7 @@ import { getGatewayClient, getAllGatewayClients } from '../ws/index.js';
 import { readConfig } from '../workspace/config.js';
 import { isClawWorkSession, parseTaskIdFromSessionKey, parseAgentIdFromSessionKey } from '@clawwork/shared';
 import type { ChatAttachment } from '@clawwork/shared';
+import { getDebugLogger } from '../debug/index.js';
 
 interface GatewaySessionRow {
   key: string;
@@ -55,15 +56,48 @@ export function registerWsHandlers(): void {
     content: string;
     attachments?: ChatAttachment[];
   }) => {
+    const taskId = parseTaskIdFromSessionKey(payload.sessionKey) ?? undefined;
+    getDebugLogger().info({
+      domain: 'ipc',
+      event: 'ipc.ws.send-message.requested',
+      gatewayId: payload.gatewayId,
+      sessionKey: payload.sessionKey,
+      taskId,
+      data: { contentLength: payload.content.length, attachmentCount: payload.attachments?.length ?? 0 },
+    });
     const gw = getGatewayClient(payload.gatewayId);
     if (!gw?.isConnected) {
+      getDebugLogger().error({
+        domain: 'ipc',
+        event: 'ipc.ws.send-message.failed',
+        gatewayId: payload.gatewayId,
+        sessionKey: payload.sessionKey,
+        taskId,
+        error: { message: 'gateway not connected' },
+      });
       return { ok: false, error: 'gateway not connected' };
     }
     try {
       await gw.sendChatMessage(payload.sessionKey, payload.content, payload.attachments);
+      getDebugLogger().info({
+        domain: 'ipc',
+        event: 'ipc.ws.send-message.completed',
+        gatewayId: payload.gatewayId,
+        sessionKey: payload.sessionKey,
+        taskId,
+        ok: true,
+      });
       return { ok: true };
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'unknown error';
+      getDebugLogger().error({
+        domain: 'ipc',
+        event: 'ipc.ws.send-message.failed',
+        gatewayId: payload.gatewayId,
+        sessionKey: payload.sessionKey,
+        taskId,
+        error: { message: msg },
+      });
       return { ok: false, error: msg };
     }
   });
@@ -113,6 +147,11 @@ export function registerWsHandlers(): void {
 
   ipcMain.handle('ws:sync-sessions', async () => {
     const clients = getAllGatewayClients();
+    getDebugLogger().info({
+      domain: 'ipc',
+      event: 'ipc.ws.sync-sessions.started',
+      data: { gatewayCount: clients.size },
+    });
 
     const discovered: {
       gatewayId: string;
@@ -216,10 +255,20 @@ export function registerWsHandlers(): void {
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'unknown error';
-        console.error(`[ws] sync-sessions failed for gateway ${gatewayId}:`, msg);
+        getDebugLogger().error({
+          domain: 'ipc',
+          event: 'ipc.ws.sync-sessions.gateway-failed',
+          gatewayId,
+          error: { message: msg },
+        });
       }
     }
 
+    getDebugLogger().info({
+      domain: 'ipc',
+      event: 'ipc.ws.sync-sessions.completed',
+      data: { discoveredCount: discovered.length },
+    });
     return { ok: true, discovered };
   });
 
