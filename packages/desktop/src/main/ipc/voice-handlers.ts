@@ -169,6 +169,9 @@ function getMicrophonePermissionStatus(): VoicePermissionStatus {
 
 async function requestMicrophonePermission(): Promise<VoicePermissionStatus> {
   if (process.platform === 'darwin') {
+    const current = systemPreferences.getMediaAccessStatus('microphone');
+    if (current === 'granted') return 'granted';
+    if (current === 'denied' || current === 'restricted') return 'denied';
     const granted = await systemPreferences.askForMediaAccess('microphone');
     return granted ? 'granted' : 'denied';
   }
