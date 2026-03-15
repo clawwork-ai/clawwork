@@ -8,6 +8,7 @@ files:
   - "node_modules/**/*"
   - "package.json"
 artifactName: ${productName}-${version}-${os}-${arch}.${ext}
+afterPack: ./scripts/afterPack.cjs
 mac:
   target:
     - target: dmg
