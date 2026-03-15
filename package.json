@@ -6,6 +6,7 @@
     "postinstall": "node scripts/ensure-electron.mjs",
     "dev": "pnpm --filter @clawwork/desktop dev",
     "build": "pnpm -r build",
+    "typecheck": "packages/desktop/node_modules/.bin/tsc -b packages/shared/tsconfig.json && packages/desktop/node_modules/.bin/tsc --noEmit -p packages/desktop/tsconfig.json",
     "lint": "pnpm -r lint",
     "test": "pnpm -r test"
   },
