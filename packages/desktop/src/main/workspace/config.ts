@@ -15,6 +15,10 @@ export interface GatewayServerConfig {
   color?: string;
 }
 
+export interface VoiceInputConfig {
+  introSeen?: boolean;
+}
+
 export interface AppConfig {
   workspacePath: string;
   theme?: 'dark' | 'light';
@@ -26,6 +30,7 @@ export interface AppConfig {
   bootstrapToken?: string;
   password?: string;
   tlsFingerprint?: string;
+  voiceInput?: VoiceInputConfig;
 }
 
 function configFilePath(): string {
@@ -45,6 +50,7 @@ function migrateConfigIfNeeded(config: AppConfig): AppConfig {
       workspacePath: config.workspacePath,
       theme: config.theme,
       language: config.language,
+      voiceInput: config.voiceInput,
       gateways: [
         {
           id,

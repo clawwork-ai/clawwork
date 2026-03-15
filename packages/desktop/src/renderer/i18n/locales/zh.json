@@ -156,6 +156,24 @@
     "thinkingMedium": "中",
     "thinkingHigh": "高"
   },
+  "voiceInput": {
+    "tooltip": "语音输入（Beta）",
+    "unsupportedTooltip": "语音输入需要 whisper-cpp，请运行: brew install whisper-cpp",
+    "listeningStatus": "正在录音…松开 Space 开始识别",
+    "interimLabel": "当前识别",
+    "beta": "Beta",
+    "permissionDenied": "麦克风权限被拒绝",
+    "unsupported": "未找到 whisper-cpp，请运行 brew install whisper-cpp 并下载模型到 ~/models/whisper/",
+    "transcribing": "正在识别…",
+    "recognitionFailed": "语音识别失败",
+    "introTitle": "语音输入（Beta）",
+    "introDescription": "按住 Space 说话，松开后结束。",
+    "introStepHold": "识别结果会写入输入框，不会自动发送。",
+    "introStepInsert": "短按 Space 仍然会输入普通空格。",
+    "introStepBeta": "需要本地安装 whisper-cpp，请运行: brew install whisper-cpp",
+    "introConfirm": "知道了",
+    "introSkip": "暂不使用"
+  },
   "chatMessage": {
     "copyMessage": "复制消息",
     "copyCode": "复制代码",

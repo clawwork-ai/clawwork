@@ -23,6 +23,8 @@ mac:
   category: public.app-category.developer-tools
   identity: null
   icon: build/icon.icns
+  extendInfo:
+    NSMicrophoneUsageDescription: ClawWork needs microphone access for voice dictation in chat input.
 dmg:
   writeUpdateInfo: false
 win:

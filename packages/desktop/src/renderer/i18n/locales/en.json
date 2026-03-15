@@ -156,6 +156,24 @@
     "thinkingMedium": "Medium",
     "thinkingHigh": "High"
   },
+  "voiceInput": {
+    "tooltip": "Voice Input (Beta)",
+    "unsupportedTooltip": "Voice input requires whisper-cpp. Run: brew install whisper-cpp",
+    "listeningStatus": "Recording... release Space to transcribe",
+    "interimLabel": "Heard so far",
+    "beta": "Beta",
+    "permissionDenied": "Microphone access was denied",
+    "unsupported": "whisper-cpp not found. Run: brew install whisper-cpp, then download a model to ~/models/whisper/",
+    "transcribing": "Transcribing...",
+    "recognitionFailed": "Voice recognition failed",
+    "introTitle": "Voice Input (Beta)",
+    "introDescription": "Hold Space to dictate, then release to finish.",
+    "introStepHold": "The transcript is inserted into the input box and is never sent automatically.",
+    "introStepInsert": "Short press Space still inserts a normal space.",
+    "introStepBeta": "Requires whisper-cpp installed locally. Run: brew install whisper-cpp",
+    "introConfirm": "Got it",
+    "introSkip": "Not now"
+  },
   "chatMessage": {
     "copyMessage": "Copy message",
     "copyCode": "Copy code",

@@ -68,7 +68,12 @@ interface AppSettings {
   bootstrapToken?: string;
   password?: string;
   tlsFingerprint?: string;
+  voiceInput?: {
+    introSeen?: boolean;
+  };
 }
+
+export type VoicePermissionStatus = 'granted' | 'not-determined' | 'denied' | 'unsupported';
 
 interface UpdateCheckResult {
   currentVersion: string;
@@ -198,6 +203,10 @@ export interface ClawWorkAPI {
   // Settings
   getSettings: () => Promise<AppSettings | null>;
   updateSettings: (partial: Partial<AppSettings>) => Promise<{ ok: boolean; config: AppSettings }>;
+  getMicrophonePermission: () => Promise<{ status: VoicePermissionStatus }>;
+  requestMicrophonePermission: () => Promise<{ status: VoicePermissionStatus }>;
+  checkWhisper: () => Promise<{ available: boolean; binaryPath: string | null; modelPath: string | null; error?: string }>;
+  transcribeAudio: (audio: ArrayBuffer) => Promise<{ ok: boolean; transcript?: string; error?: string }>;
 
   // Gateway management
   addGateway: (gateway: GatewayServerConfig) => Promise<IpcResult>;

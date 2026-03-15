@@ -86,6 +86,14 @@ function buildApi(): ClawWorkAPI {
       ipcRenderer.invoke('settings:get'),
     updateSettings: (partial: Record<string, unknown>) =>
       ipcRenderer.invoke('settings:update', partial),
+    getMicrophonePermission: () =>
+      ipcRenderer.invoke('voice:get-microphone-permission'),
+    requestMicrophonePermission: () =>
+      ipcRenderer.invoke('voice:request-microphone-permission'),
+    checkWhisper: () =>
+      ipcRenderer.invoke('voice:check-whisper'),
+    transcribeAudio: (audio: ArrayBuffer) =>
+      ipcRenderer.invoke('voice:transcribe', { audio }),
 
     addGateway: (gateway: GatewayServerConfig) =>
       ipcRenderer.invoke('settings:add-gateway', gateway),

@@ -1,21 +1,25 @@
 import { useRef, useCallback, useState, useEffect, type KeyboardEvent, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Paperclip, X, ChevronDown, Cpu, Brain } from 'lucide-react';
+import { Send, Paperclip, X, ChevronDown, Cpu, Brain, Mic, Loader2 } from 'lucide-react';
 import type { MessageImageAttachment } from '@clawwork/shared';
 import { toast } from 'sonner';
 import { cn, modKey } from '@/lib/utils';
 import { motion as motionPresets } from '@/styles/design-tokens';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   DropdownMenu, DropdownMenuTrigger,
   DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import { createWhisperSttSession } from '@/lib/voice/whisper-stt';
+import { useVoiceInput } from '@/hooks/useVoiceInput';
 import { useTaskStore } from '../stores/taskStore';
 import { useMessageStore } from '../stores/messageStore';
 import { useUiStore } from '../stores/uiStore';
 import SlashCommandMenu from './SlashCommandMenu';
+import VoiceIntroDialog from './VoiceIntroDialog';
 import { filterSlashCommands, parseSlashQuery, type SlashCommand } from '@/lib/slash-commands';
 
 interface PendingImage {
@@ -79,6 +83,8 @@ export default function ChatInput() {
   const slashCommands = filterSlashCommands(slashQuery);
 
   const sendShortcut = useUiStore((s) => s.sendShortcut);
+  const mainView = useUiStore((s) => s.mainView);
+  const settingsOpen = useUiStore((s) => s.settingsOpen);
 
   /** Evaluate the current textarea value and cursor position to determine
    *  whether to show the slash command menu. */
@@ -126,9 +132,57 @@ export default function ChatInput() {
   const modelCatalog = useUiStore((s) => s.modelCatalog);
   const currentModel = activeTask?.model;
   const currentThinking = (activeTask?.thinkingLevel ?? 'off') as ThinkingLevel;
+  const [whisperAvailable, setWhisperAvailable] = useState(false);
+  useEffect(() => {
+    window.clawwork.checkWhisper().then((r) => setWhisperAvailable(r.available));
+  }, []);
   const modelLabel = currentModel
     ? modelCatalog.find((m) => m.id === currentModel)?.name ?? currentModel.split('/').pop() ?? currentModel
     : modelCatalog[0]?.name ?? 'Default';
+
+  const loadVoiceIntroSeen = useCallback(async () => {
+    const settings = await window.clawwork.getSettings();
+    return Boolean(settings?.voiceInput?.introSeen);
+  }, []);
+
+  const markVoiceIntroSeen = useCallback(async () => {
+    await window.clawwork.updateSettings({
+      voiceInput: {
+        introSeen: true,
+      },
+    });
+  }, []);
+
+  const requestVoicePermission = useCallback(async () => {
+    const result = await window.clawwork.requestMicrophonePermission();
+    return result.status;
+  }, []);
+
+  const {
+    isSupported: isVoiceSupported,
+    isListening: isVoiceListening,
+    isTranscribing: isVoiceTranscribing,
+    isIntroOpen: isVoiceIntroOpen,
+    interimTranscript,
+    errorCode: voiceErrorCode,
+    handleKeyDown: handleVoiceKeyDown,
+    handleKeyUp: handleVoiceKeyUp,
+    confirmIntro: confirmVoiceIntro,
+    dismissIntro: dismissVoiceIntro,
+    startFromTrigger: startVoiceInput,
+    stopListening: stopVoiceInput,
+  } = useVoiceInput({
+    textareaRef,
+    hasActiveTask: Boolean(activeTask) && !isOffline,
+    activeTaskKey: activeTask?.id ?? null,
+    mainView,
+    settingsOpen,
+    loadIntroSeen: loadVoiceIntroSeen,
+    markIntroSeen: markVoiceIntroSeen,
+    requestPermission: requestVoicePermission,
+    createSession: createWhisperSttSession,
+    isSupported: whisperAvailable,
+  });
 
   const handleModelChange = useCallback((modelId: string) => {
     if (!activeTask) return;
@@ -177,6 +231,7 @@ export default function ChatInput() {
   const handleSend = useCallback(async () => {
     const textarea = textareaRef.current;
     if (!textarea || !activeTask || isOffline) return;
+    stopVoiceInput();
 
     const content = textarea.value.trim();
     if (!content && !pendingImages.length) return;
@@ -220,10 +275,15 @@ export default function ChatInput() {
       addMessage(activeTask.id, 'system', `${t('errors.sendFailed')}: ${msg}`);
       toast.error('Failed to send message', { description: msg });
     }
-  }, [activeTask, addMessage, setProcessing, updateTaskTitle, isOffline, pendingImages, t]);
+  }, [activeTask, addMessage, setProcessing, updateTaskTitle, isOffline, pendingImages, stopVoiceInput, t]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
+      handleVoiceKeyDown(e);
+      if (e.defaultPrevented) {
+        return;
+      }
+
       // ── Slash menu keyboard navigation ────────────────────────────────────────
       if (slashMenuVisible && slashCommands.length > 0) {
         if (e.key === 'ArrowDown') {
@@ -260,7 +320,7 @@ export default function ChatInput() {
         }
       }
     },
-    [slashMenuVisible, slashCommands, slashIndex, commitSlashCommand, handleSend, sendShortcut],
+    [slashMenuVisible, slashCommands, slashIndex, commitSlashCommand, handleSend, handleVoiceKeyDown, sendShortcut],
   );
 
   const handleInput = useCallback(() => {
@@ -293,12 +353,37 @@ export default function ChatInput() {
     }
   }, []);
 
+  const voiceActive = isVoiceListening || isVoiceTranscribing;
   const disabled = !activeTask || isOffline;
   const placeholder = isOffline
     ? t('chatInput.offlineReadOnly')
     : !activeTask
       ? t('chatInput.createTaskFirst')
       : t('chatInput.describeTask');
+  const voiceTooltip = !isVoiceSupported
+    ? t('voiceInput.unsupportedTooltip')
+    : t('voiceInput.tooltip');
+
+  const prevTranscribingRef = useRef(false);
+  useEffect(() => {
+    if (prevTranscribingRef.current && !isVoiceTranscribing) {
+      textareaRef.current?.focus();
+    }
+    prevTranscribingRef.current = isVoiceTranscribing;
+  }, [isVoiceTranscribing]);
+
+  useEffect(() => {
+    if (!voiceErrorCode) return;
+    if (voiceErrorCode === 'permission-denied') {
+      toast.error(t('voiceInput.permissionDenied'));
+      return;
+    }
+    if (voiceErrorCode === 'unsupported') {
+      toast.error(t('voiceInput.unsupported'));
+      return;
+    }
+    toast.error(t('voiceInput.recognitionFailed'));
+  }, [voiceErrorCode, t]);
 
   return (
     <div className="flex-shrink-0 px-6 pb-5">
@@ -462,21 +547,87 @@ export default function ChatInput() {
               </Button>
             </motion.div>
 
-            <textarea
-              ref={textareaRef}
-              rows={1}
-              placeholder={placeholder}
-              disabled={disabled}
-              onKeyDown={handleKeyDown}
-              onInput={handleInput}
-              onPaste={handlePaste}
-              onClick={updateSlashMenu}
-              className={cn(
-                'flex-1 resize-none bg-transparent',
-                'text-[var(--text-primary)] placeholder:text-[var(--text-muted)]',
-                'outline-none max-h-40 disabled:opacity-50',
-              )}
-            />
+            <div className="flex-1 relative min-h-[24px]">
+              <textarea
+                ref={textareaRef}
+                rows={1}
+                placeholder={placeholder}
+                disabled={disabled || isVoiceTranscribing}
+                onKeyDown={handleKeyDown}
+                onKeyUp={handleVoiceKeyUp}
+                onInput={handleInput}
+                onPaste={handlePaste}
+                onClick={updateSlashMenu}
+                className={cn(
+                  'w-full resize-none bg-transparent',
+                  'text-[var(--text-primary)] placeholder:text-[var(--text-muted)]',
+                  'outline-none max-h-40 disabled:opacity-50',
+                  voiceActive && 'invisible',
+                )}
+              />
+              <AnimatePresence>
+                {voiceActive && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute inset-0 flex items-center gap-2.5"
+                  >
+                    {isVoiceListening && (
+                      <>
+                        <span className="relative flex h-2.5 w-2.5">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--accent)] opacity-60" />
+                          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[var(--accent)]" />
+                        </span>
+                        <span className="text-sm text-[var(--text-secondary)]">
+                          {t('voiceInput.listeningStatus')}
+                        </span>
+                      </>
+                    )}
+                    {isVoiceTranscribing && (
+                      <>
+                        <Loader2 size={14} className="animate-spin text-[var(--accent)]" />
+                        <span className="text-sm text-[var(--text-secondary)]">
+                          {t('voiceInput.transcribing')}
+                        </span>
+                      </>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+            <div className="flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <Button
+                      variant={isVoiceListening ? 'soft' : 'ghost'}
+                      size="icon"
+                      onClick={() => {
+                        if (isVoiceListening) {
+                          stopVoiceInput();
+                          return;
+                        }
+                        void startVoiceInput();
+                      }}
+                      disabled={disabled}
+                      className={cn(
+                        'rounded-xl',
+                        isVoiceListening && 'text-[var(--accent)]',
+                        !isVoiceListening && 'text-[var(--text-muted)] hover:text-[var(--text-primary)]',
+                      )}
+                    >
+                      <Mic size={16} />
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>{voiceTooltip}</TooltipContent>
+              </Tooltip>
+              <span className="rounded-full bg-[var(--accent-soft)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-[var(--accent)]">
+                {t('voiceInput.beta')}
+              </span>
+            </div>
             <motion.div
               whileHover={motionPresets.scale.whileHover}
               whileTap={motionPresets.scale.whileTap}
@@ -503,6 +654,11 @@ export default function ChatInput() {
               : t('chatInput.poweredBy')}
         </p>
       </div>
+      <VoiceIntroDialog
+        open={isVoiceIntroOpen}
+        onConfirm={confirmVoiceIntro}
+        onCancel={dismissVoiceIntro}
+      />
     </div>
   );
 }

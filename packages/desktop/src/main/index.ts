@@ -12,6 +12,7 @@ import { registerSearchHandlers } from './ipc/search-handlers.js';
 import { registerDataHandlers } from './ipc/data-handlers.js';
 import { registerUpdateHandlers } from './ipc/update-handlers.js';
 import { registerDebugHandlers } from './ipc/debug-handlers.js';
+import { configureVoicePermissionHandlers, registerVoiceHandlers } from './ipc/voice-handlers.js';
 import { getWorkspacePath, readConfig } from './workspace/config.js';
 import { initDatabase, closeDatabase } from './db/index.js';
 
@@ -101,6 +102,8 @@ app.whenReady().then(() => {
   registerDataHandlers();
   registerUpdateHandlers();
   registerDebugHandlers();
+  registerVoiceHandlers();
+  configureVoicePermissionHandlers();
 
   const wsPath = getWorkspacePath();
   if (wsPath) {
